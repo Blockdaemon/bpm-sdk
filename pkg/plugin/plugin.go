@@ -108,7 +108,6 @@ func Initialize(plugin Plugin) {
 			return plugin.Upgrade(currentNode)
 		},
 	}
-	upgrade.Flags().BoolVar(&purge, "purge", false, "Purge all data, secrets and configuration files")
 	rootCmd.AddCommand(upgrade)
 
 	var versionCmd = &cobra.Command{
