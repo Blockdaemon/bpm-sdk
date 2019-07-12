@@ -17,7 +17,7 @@ type Plugin struct {
 	CreateConfigs func(currentNode node.Node) error
 	Start         func(currentNode node.Node) error
 	Remove        func(currentNode node.Node, purge bool) error
-	Upgrade       func(cirrentNode node.Node) error
+	Upgrade       func(currentNode node.Node) error
 }
 
 func Initialize(plugin Plugin) {
