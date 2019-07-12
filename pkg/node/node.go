@@ -74,6 +74,17 @@ func LoadNode(baseDir, nodeGID string) (Node, error) {
 	node.NodeGID = nodeGID
 	node.baseDir = baseDir
 
+	// Create node directories if they don't exist yet
+	_, err := util.MakeDirectory(node.SecretsDirectory())
+	if err != nil {
+		return node, err
+	}
+
+	_, err = util.MakeDirectory(node.ConfigsDirectory())
+	if err != nil {
+		return node, err
+	}
+
 	// Load node data
 	nodeData, err := ioutil.ReadFile(node.NodeFile())
 	if err != nil {
