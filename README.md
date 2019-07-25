@@ -103,8 +103,8 @@ The easiest way to get started is to copy the example below and start implementi
 	package main
 
 	import (
-		"gitlab.com/Blockdaemon/blockchain/bpm-lib/pkg/plugin"
-		"gitlab.com/Blockdaemon/blockchain/bpm-lib/pkg/node"
+		"gitlab.com/Blockdaemon/bpm-sdk/pkg/plugin"
+		"gitlab.com/Blockdaemon/bpm-sdk/pkg/node"
 
 		"fmt"
 	)
