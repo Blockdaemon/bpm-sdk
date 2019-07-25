@@ -197,7 +197,11 @@ When uploading a new plugin, the name and version need to be added to this file.
 
 Important: Make sure the files are public!
 
-### Build bpm-sdk documentation
+# BPM-SDK development
+
+The following section contains information for the development of the BPM-SDK itself.
+
+## Generate SDK documentation
 
 Generating the SDK documentation is currently a bit tricky for different reasons:
 
