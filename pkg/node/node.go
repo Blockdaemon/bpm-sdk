@@ -1,3 +1,8 @@
+// Package node provides an easy way to access node related information.
+//
+// Utility functions to generate names and directory paths encapsulate the plugin conventions.
+// It is highly recommended to use this package when implementing a new plugin to achieve consistency
+// across plugins.
 package node
 
 import (
@@ -8,35 +13,53 @@ import (
 	"gitlab.com/Blockdaemon/bpm-sdk/internal/util"
 )
 
+// Node represents a blockchain node, it's configuration and related information
 type Node struct {
+	// The global ID of this node
 	NodeGID string `json:"node_gid"`
+
+	// The global ID of the blockchain this node belongs to. 
+	// This value becomes very relevant when running a private/permissioned Blockchain network
 	BlockchainGID string `json:"blockchain_gid"`
 
+	// Which blockchain network to connect to (Example: mainnet, ropsten, ...)
 	Environment  string `json:"environment"`
+	// Describes the type of this blockchain network (Examples: public, private)
 	NetworkType  string `json:"network_type"`
+	// Describes the specific type of this node (Examples: validator, watcher, ...)
 	NodeSubtype  string `json:"node_subtype"`
+	// Describes the protocol of this node (Examples: bitcoin, ethereum, polkadot, ...)
 	ProtocolType string `json:"protocol_type"`
 
+	// Specific configuration settings for this node
 	Config map[string]interface{} `json:"config"`
+
+	// Secrets (Example: Private keys)
 	Secrets map[string]interface{} // No json here, never serialize secrets!
 
+	// The plugin version used to install this node (if installed yet)
+	// This is useful to know in order to run migrations on upgrades.
 	CurrentVersion string
 
 	baseDir string
 }
 
+// DockerNetworkName returns the recommended name for a docker network in which this node runs
 func (c Node) DockerNetworkName() string {
 	return "bd-" + c.NodeGID
 }
 
+// ContainerName takes a simple name for a docker container and returns it formatted according to plugin conventions
 func (c Node) ContainerName(containerName string) string {
 	return "bd-" + c.NodeGID + "-" + containerName
 }
 
+// VolumeName converts a name for a docker volume and returns it formatted according to plugin conventions
 func (c Node) VolumeName(volumeName string) string {
 	return "bd-" + c.NodeGID + "-" + volumeName
 }
 
+// NodeDirectory returns the base directory under which all configuration, secrets and meta-data for this node is stored
 func (c Node) NodeDirectory() string {
 	expandedBaseDir, err := homedir.Expand(c.baseDir)
 	if err != nil {
@@ -46,28 +69,35 @@ func (c Node) NodeDirectory() string {
 	return path.Join(expandedBaseDir, "nodes", c.NodeGID)
 }
 
+// CurrentVersionFile returns the filepath in which the plugin version from the last successfull install is stored
 func (c Node) CurrentVersionFile() string {
 	return path.Join(c.NodeDirectory(), "version")
 }
 
+// NodeFile returns the filepath in which the base configuration as well as meta-data from the PBG is stored
 func (c Node) NodeFile() string {
 	return path.Join(c.NodeDirectory(), "node.json")
 }
 
+// ConfigsDirectorys returns the directory under which all configuration for the blockchain client is stored
 func (c Node) ConfigsDirectory() string {
 	return path.Join(c.NodeDirectory(), "configs")
 }
 
+// ConfigsDirectorys returns the directory under which all secrets for the blockchain client is stored
 func (c Node) SecretsDirectory() string {
 	return path.Join(c.NodeDirectory(), "secrets")
 }
 
+// WritePluginVersion writes the current plugin version into a version file. 
+// This will be executed automatically by bpm after an new node is started or upgraded.
 func (c Node) WritePluginVersion(version string) error {
 	c.CurrentVersion = version
 
 	return ioutil.WriteFile(c.CurrentVersionFile(), []byte(version), 0644)
 }
 
+// LoadNode loads all the data for a particular node and creates all recommended directories if they don't exist yet
 func LoadNode(baseDir, nodeGID string) (Node, error) {
 	var node Node
 

@@ -60,29 +60,39 @@ In this case the assumption is that the plugin also removes data and configurati
 
 ## Upgrade
 
-TODO
+Whenever a user runs: `bpm upgrade <plugin>`, bpm internally calls the plugin with the following parameters:
+
+	plugin-binary upgrade <node-id>
+
+This will take all the necessary actions to upgrade a node. This could include stopping/restarting containers, running database migrations, re-creating configuration, etc.
+
+After the upgrade `bpm` will write the current plugin version to `~/.blockdaemon/nodes/<node-id>/version`. This version can be used when doing another upgrade to know which migrations to run.
 
 # Plugin SDK
 
 ## docker
 
-This package provides an abstraction library that makes it very simple to start and remove docker containers, networks and volumes.
+Package docker provides a simple docker abstraction layer that makes it very easy to start and remove docker containers, networks and volumes.
 
-TODO, document: https://gitlab.com/Blockdaemon/bpm-sdk/blob/master/pkg/docker/docker.go
+For more information please refer to the [API documentation](./docs/api/pkg/gitlab.com/Blockdaemon/bpm-sdk/pkg/docker/index.html).
 
 ## node
 
-This package provides an easy way to access information about the node itself, like ID, directories, etc.
+Package node provides an easy way to access node related information.
 
-TODO, document: https://gitlab.com/Blockdaemon/bpm-sdk/blob/master/pkg/node/node.go
+For more information please refer to the [API documentation](./docs/api/pkg/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/index.html).
 
 ## template
 
-TODO, document: https://gitlab.com/Blockdaemon/bpm-sdk/blob/master/pkg/template/template.go
+Package template implements functions to render Go templates to files using the node.Node struct as an imnput for the templates.
+
+For more information please refer to the [API documentation](./docs/api/pkg/gitlab.com/Blockdaemon/bpm-sdk/pkg/template/index.html).
 
 ## plugin
 
-This package provides an easy way to create new plugins. It abstracts away all the command line and file parsing so users just need to implement the actual logic. See [Implementing a plugin using the Go SDL](#implementing-a-plugin-using-the-go-sdk)
+Package plugin provides an easy way to create the required CLI for a plugin. It abstracts away all the command line and file parsing so users just need to implement the actual logic. 
+
+For more information please refer to [Implementing a plugin using the Go SDL](#implementing-a-plugin-using-the-go-sdk) and the [API documentation](./docs/api/pkg/gitlab.com/Blockdaemon/bpm-sdk/pkg/plugin/index.html).
 
 # Implementing a plugin using the Go SDK
 
@@ -143,8 +153,6 @@ The easiest way to get started is to copy the example below and start implementi
 
 ## Tipps & Tricks
 
-TODO: Add specifics about version
-
 ### Automatically setting the version
 
 Go has the capability to overwrite variables at compile time like this:
@@ -155,9 +163,7 @@ This can be used in a continuous integration pipeline to automatically version t
 
 # Nodestate
 
-Every plugin should run nodestate next to the blockchain client. Nodestate sends monitoring information back to Blockdaemon so we can ensure the node is in perfect shape!
-
-TODO: Describe nodestate better and link to relevant documentation
+Every plugin should run nodestate next to the blockchain client. Nodestate sends monitoring information back to Blockdaemon so we can ensure the node is in perfect shape! Adapting nodestate to BPM is currently a work in progress. We'll update this section soon.
 
 # Deployment
 
@@ -190,3 +196,23 @@ In addition to the plugin binaries a single `version-info.json` needs to exist i
 When uploading a new plugin, the name and version need to be added to this file.
 
 Important: Make sure the files are public!
+
+### Build bpm-sdk documentation
+
+Generating the SDK documentation is currently a bit tricky for different reasons:
+
+* `godoc` doesn't support modules yet (https://github.com/golang/go/issues/26827)
+* `godoc -html` does not produce a nice output (https://github.com/golang/go/issues/2381)
+* `godoc` doesn't like symbolic links in the `GOROOT`. This breaks it when using homebrew on OSX.
+
+The recommended workarounds are:
+
+1. Create a folder structure that resembles the traditional go directory: `mkdir -p ~/go-mod/src/gitlab.com/Blockdaemon`
+2. Copy `bpm-sdk` into the new directory: `cp -rv bpm-sdk $HOME/go-mod/src/gitlab.com/Blockdaemon/`
+3. Set `GOPATH` to the new directory: `export GOPATH=$HOME/go-mod/`
+4. Run `godoc`: `godoc -http=localhost:6060 -goroot /usr/local/Cellar/go/1.12.7/libexec/`
+5. Go into the docs directory: `cd bpm-sdk/docs`
+6. Download the relevant files: `wget -e robots=off -r -np -N -E -p -k http://localhost:6060/pkg/gitlab.com/Blockdaemon/bpm-sdk`
+7. Rename downloaded directory: `mv localhost\:6060/ api`
+
+

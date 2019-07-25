@@ -1,4 +1,4 @@
-// A simple docker abstraction layer.
+// Package docker provides a simple docker abstraction layer.
 //
 // Please note that the methods are idempotent (i.e. they can be called multiple times without changing the result).
 // This is important because it reduces the need for additional checks if the user runs a command multiple times. E.g.
@@ -10,9 +10,9 @@
 //
 // The general pattern used internally in this package is:
 //
-// 1. Check if the desired result (e.g. container running) already exists
-// 2. If yes, do nothing
-// 3. If no, invoke the action that produces the result (e.g. run container)
+// 		1. Check if the desired result (e.g. container running) already exists
+// 		2. If yes, do nothing
+// 		3. If no, invoke the action that produces the result (e.g. run container)
 package docker
 
 import (

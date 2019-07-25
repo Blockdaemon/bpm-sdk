@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#375EAB">
+
+  <title>node - The Go Programming Language</title>
+
+<link type="text/css" rel="stylesheet" href="../../../../../../lib/godoc/style.css">
+
+<link rel="stylesheet" href="../../../../../../lib/godoc/jquery.treeview.css">
+<script>window.initFuncs = [];</script>
+
+<script src="../../../../../../lib/godoc/jquery.js" defer></script>
+<script src="../../../../../../lib/godoc/jquery.treeview.js" defer></script>
+<script src="../../../../../../lib/godoc/jquery.treeview.edit.js" defer></script>
+
+
+<script>var goVersion = "go1.11";</script>
+<script src="../../../../../../lib/godoc/godocs.js" defer></script>
+</head>
+<body>
+
+<div id='lowframe' style="position: fixed; bottom: 0; left: 0; height: 0; width: 100%; border-top: thin solid grey; background-color: white; overflow: auto;">
+...
+</div><!-- #lowframe -->
+
+<div id="topbar" class="wide"><div class="container">
+<div class="top-heading" id="heading-wide"><a href="http://localhost:6060/">The Go Programming Language</a></div>
+<div class="top-heading" id="heading-narrow"><a href="http://localhost:6060/">Go</a></div>
+<a href="index.html#" id="menu-button"><span id="menu-button-arrow">&#9661;</span></a>
+<form method="GET" action="http://localhost:6060/search">
+<div id="menu">
+<a href="http://localhost:6060/doc/">Documents</a>
+<a href="http://localhost:6060/pkg/">Packages</a>
+<a href="http://localhost:6060/project/">The Project</a>
+<a href="http://localhost:6060/help/">Help</a>
+
+<a href="http://localhost:6060/blog/">Blog</a>
+
+
+<span class="search-box"><input type="search" id="search" name="q" placeholder="Search" aria-label="Search" required><button type="submit"><span><!-- magnifying glass: --><svg width="24" height="24" viewBox="0 0 24 24"><title>submit search</title><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/><path d="M0 0h24v24H0z" fill="none"/></svg></span></button></span>
+</div>
+</form>
+
+</div></div>
+
+
+
+<div id="page" class="wide">
+<div class="container">
+
+
+  <h1>
+    Package node
+    <span class="text-muted"></span>
+  </h1>
+
+
+
+
+
+
+
+<div id="nav"></div>
+
+
+<!--
+	Copyright 2009 The Go Authors. All rights reserved.
+	Use of this source code is governed by a BSD-style
+	license that can be found in the LICENSE file.
+-->
+<!--
+	Note: Static (i.e., not template-generated) href and id
+	attributes start with "pkg-" to make it impossible for
+	them to conflict with generated attributes (some of which
+	correspond to Go identifiers).
+-->
+
+	<script type='text/javascript'>
+	document.ANALYSIS_DATA = null;
+	document.CALLGRAPH = null;
+	</script>
+
+	
+		
+		<div id="short-nav">
+			<dl>
+			<dd><code>import "gitlab.com/Blockdaemon/bpm-sdk/pkg/node"</code></dd>
+			</dl>
+			<dl>
+			<dd><a href="index.html#pkg-overview" class="overviewLink">Overview</a></dd>
+			<dd><a href="index.html#pkg-index" class="indexLink">Index</a></dd>
+			
+			
+			</dl>
+		</div>
+		<!-- The package's Name is printed as title by the top-level template -->
+		<div id="pkg-overview" class="toggleVisible">
+			<div class="collapsed">
+				<h2 class="toggleButton" title="Click to show Overview section">Overview ▹</h2>
+			</div>
+			<div class="expanded">
+				<h2 class="toggleButton" title="Click to hide Overview section">Overview ▾</h2>
+				<p>
+Package node provides an easy way to access node related information.
+</p>
+<p>
+Utility functions to generate names and directory paths encapsulate the plugin conventions.
+It is highly recommended to use this package when implementing a new plugin to achieve consistency
+across plugins.
+</p>
+
+				
+			</div>
+		</div>
+
+		<div id="pkg-index" class="toggleVisible">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Index section">Index ▹</h2>
+		</div>
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Index section">Index ▾</h2>
+
+		<!-- Table of contents for API; must be named manual-nav to turn off auto nav. -->
+			<div id="manual-nav">
+			<dl>
+			
+			
+			
+			
+				
+				<dd><a href="index.html#Node">type Node</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html#LoadNode">func LoadNode(baseDir, nodeGID string) (Node, error)</a></dd>
+				
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html#Node.ConfigsDirectory">func (c Node) ConfigsDirectory() string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html#Node.ContainerName">func (c Node) ContainerName(containerName string) string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html#Node.CurrentVersionFile">func (c Node) CurrentVersionFile() string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html#Node.DockerNetworkName">func (c Node) DockerNetworkName() string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html#Node.NodeDirectory">func (c Node) NodeDirectory() string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html#Node.NodeFile">func (c Node) NodeFile() string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html#Node.SecretsDirectory">func (c Node) SecretsDirectory() string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html#Node.VolumeName">func (c Node) VolumeName(volumeName string) string</a></dd>
+				
+					
+					<dd>&nbsp; &nbsp; <a href="index.html#Node.WritePluginVersion">func (c Node) WritePluginVersion(version string) error</a></dd>
+				
+			
+			
+			</dl>
+			</div><!-- #manual-nav -->
+
+		
+
+		
+			<h3>Package files</h3>
+			<p>
+			<span style="font-size:90%">
+			
+				<a href="http://localhost:6060/src/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/node.go">node.go</a>
+			
+			</span>
+			</p>
+		
+		</div><!-- .expanded -->
+		</div><!-- #pkg-index -->
+
+		<div id="pkg-callgraph" class="toggle" style="display: none">
+		<div class="collapsed">
+			<h2 class="toggleButton" title="Click to show Internal Call Graph section">Internal call graph ▹</h2>
+		</div> <!-- .expanded -->
+		<div class="expanded">
+			<h2 class="toggleButton" title="Click to hide Internal Call Graph section">Internal call graph ▾</h2>
+			<p>
+			  In the call graph viewer below, each node
+			  is a function belonging to this package
+			  and its children are the functions it
+			  calls&mdash;perhaps dynamically.
+			</p>
+			<p>
+			  The root nodes are the entry points of the
+			  package: functions that may be called from
+			  outside the package.
+			  There may be non-exported or anonymous
+			  functions among them if they are called
+			  dynamically from another package.
+			</p>
+			<p>
+			  Click a node to visit that function's source code.
+			  From there you can visit its callers by
+			  clicking its declaring <code>func</code>
+			  token.
+			</p>
+			<p>
+			  Functions may be omitted if they were
+			  determined to be unreachable in the
+			  particular programs or tests that were
+			  analyzed.
+			</p>
+			<!-- Zero means show all package entry points. -->
+			<ul style="margin-left: 0.5in" id="callgraph-0" class="treeview"></ul>
+		</div>
+		</div> <!-- #pkg-callgraph -->
+
+		
+		
+		
+		
+			
+			
+			<h2 id="Node">type <a href="http://localhost:6060/src/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/node.go?s=528:1689#L7">Node</a>
+				<a class="permalink" href="index.html#Node">&#xb6;</a>
+				
+				
+			</h2>
+			<p>
+Node represents a blockchain node, it&#39;s configuration and related information
+</p>
+
+			<pre>type Node struct {
+    <span class="comment">// The global ID of this node</span>
+<span id="Node.NodeGID"></span>    NodeGID <a href="http://localhost:6060/pkg/builtin/#string">string</a> `json:&#34;node_gid&#34;`
+
+    <span class="comment">// The global ID of the blockchain this node belongs to.</span>
+    <span class="comment">// This value becomes very relevant when running a private/permissioned Blockchain network</span>
+<span id="Node.BlockchainGID"></span>    BlockchainGID <a href="http://localhost:6060/pkg/builtin/#string">string</a> `json:&#34;blockchain_gid&#34;`
+
+    <span class="comment">// Which blockchain network to connect to (Example: mainnet, ropsten, ...)</span>
+<span id="Node.Environment"></span>    Environment <a href="http://localhost:6060/pkg/builtin/#string">string</a> `json:&#34;environment&#34;`
+    <span class="comment">// Describes the type of this blockchain network (Examples: public, private)</span>
+<span id="Node.NetworkType"></span>    NetworkType <a href="http://localhost:6060/pkg/builtin/#string">string</a> `json:&#34;network_type&#34;`
+    <span class="comment">// Describes the specific type of this node (Examples: validator, watcher, ...)</span>
+<span id="Node.NodeSubtype"></span>    NodeSubtype <a href="http://localhost:6060/pkg/builtin/#string">string</a> `json:&#34;node_subtype&#34;`
+    <span class="comment">// Describes the protocol of this node (Examples: bitcoin, ethereum, polkadot, ...)</span>
+<span id="Node.ProtocolType"></span>    ProtocolType <a href="http://localhost:6060/pkg/builtin/#string">string</a> `json:&#34;protocol_type&#34;`
+
+    <span class="comment">// Specific configuration settings for this node</span>
+<span id="Node.Config"></span>    Config map[<a href="http://localhost:6060/pkg/builtin/#string">string</a>]interface{} `json:&#34;config&#34;`
+
+<span id="Node.Secrets"></span>    <span class="comment">// Secrets (Example: Private keys)</span>
+    Secrets map[<a href="http://localhost:6060/pkg/builtin/#string">string</a>]interface{} <span class="comment">// No json here, never serialize secrets!</span>
+
+    <span class="comment">// The plugin version used to install this node (if installed yet)</span>
+    <span class="comment">// This is useful to know in order to run migrations on upgrades.</span>
+<span id="Node.CurrentVersion"></span>    CurrentVersion <a href="http://localhost:6060/pkg/builtin/#string">string</a>
+    <span class="comment">// contains filtered or unexported fields</span>
+}
+</pre>
+
+			
+
+			
+
+			
+			
+			
+
+			
+				
+				<h3 id="LoadNode">func <a href="http://localhost:6060/src/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/node.go?s=3931:3983#L91">LoadNode</a>
+					<a class="permalink" href="index.html#LoadNode">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func LoadNode(baseDir, nodeGID <a href="http://localhost:6060/pkg/builtin/#string">string</a>) (<a href="index.html#Node">Node</a>, <a href="http://localhost:6060/pkg/builtin/#error">error</a>)</pre>
+				<p>
+LoadNode loads all the data for a particular node and creates all recommended directories if they don&#39;t exist yet
+</p>
+
+				
+				
+			
+
+			
+				
+				<h3 id="Node.ConfigsDirectory">func (Node) <a href="http://localhost:6060/src/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/node.go?s=3198:3237#L73">ConfigsDirectory</a>
+					<a class="permalink" href="index.html#Node.ConfigsDirectory">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (c <a href="index.html#Node">Node</a>) ConfigsDirectory() <a href="http://localhost:6060/pkg/builtin/#string">string</a></pre>
+				<p>
+ConfigsDirectorys returns the directory under which all configuration for the blockchain client is stored
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Node.ContainerName">func (Node) <a href="http://localhost:6060/src/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/node.go?s=1975:2031#L43">ContainerName</a>
+					<a class="permalink" href="index.html#Node.ContainerName">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (c <a href="index.html#Node">Node</a>) ContainerName(containerName <a href="http://localhost:6060/pkg/builtin/#string">string</a>) <a href="http://localhost:6060/pkg/builtin/#string">string</a></pre>
+				<p>
+ContainerName takes a simple name for a docker container and returns it formatted according to plugin conventions
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Node.CurrentVersionFile">func (Node) <a href="http://localhost:6060/src/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/node.go?s=2798:2839#L63">CurrentVersionFile</a>
+					<a class="permalink" href="index.html#Node.CurrentVersionFile">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (c <a href="index.html#Node">Node</a>) CurrentVersionFile() <a href="http://localhost:6060/pkg/builtin/#string">string</a></pre>
+				<p>
+CurrentVersionFile returns the filepath in which the plugin version from the last successfull install is stored
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Node.DockerNetworkName">func (Node) <a href="http://localhost:6060/src/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/node.go?s=1786:1826#L38">DockerNetworkName</a>
+					<a class="permalink" href="index.html#Node.DockerNetworkName">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (c <a href="index.html#Node">Node</a>) DockerNetworkName() <a href="http://localhost:6060/pkg/builtin/#string">string</a></pre>
+				<p>
+DockerNetworkName returns the recommended name for a docker network in which this node runs
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Node.NodeDirectory">func (Node) <a href="http://localhost:6060/src/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/node.go?s=2414:2450#L53">NodeDirectory</a>
+					<a class="permalink" href="index.html#Node.NodeDirectory">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (c <a href="index.html#Node">Node</a>) NodeDirectory() <a href="http://localhost:6060/pkg/builtin/#string">string</a></pre>
+				<p>
+NodeDirectory returns the base directory under which all configuration, secrets and meta-data for this node is stored
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Node.NodeFile">func (Node) <a href="http://localhost:6060/src/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/node.go?s=3002:3033#L68">NodeFile</a>
+					<a class="permalink" href="index.html#Node.NodeFile">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (c <a href="index.html#Node">Node</a>) NodeFile() <a href="http://localhost:6060/pkg/builtin/#string">string</a></pre>
+				<p>
+NodeFile returns the filepath in which the base configuration as well as meta-data from the PBG is stored
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Node.SecretsDirectory">func (Node) <a href="http://localhost:6060/src/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/node.go?s=3394:3433#L78">SecretsDirectory</a>
+					<a class="permalink" href="index.html#Node.SecretsDirectory">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (c <a href="index.html#Node">Node</a>) SecretsDirectory() <a href="http://localhost:6060/pkg/builtin/#string">string</a></pre>
+				<p>
+ConfigsDirectorys returns the directory under which all secrets for the blockchain client is stored
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Node.VolumeName">func (Node) <a href="http://localhost:6060/src/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/node.go?s=2192:2242#L48">VolumeName</a>
+					<a class="permalink" href="index.html#Node.VolumeName">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (c <a href="index.html#Node">Node</a>) VolumeName(volumeName <a href="http://localhost:6060/pkg/builtin/#string">string</a>) <a href="http://localhost:6060/pkg/builtin/#string">string</a></pre>
+				<p>
+VolumeName converts a name for a docker volume and returns it formatted according to plugin conventions
+</p>
+
+				
+				
+				
+			
+				
+				<h3 id="Node.WritePluginVersion">func (Node) <a href="http://localhost:6060/src/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/node.go?s=3653:3707#L84">WritePluginVersion</a>
+					<a class="permalink" href="index.html#Node.WritePluginVersion">&#xb6;</a>
+					
+					
+				</h3>
+				<pre>func (c <a href="index.html#Node">Node</a>) WritePluginVersion(version <a href="http://localhost:6060/pkg/builtin/#string">string</a>) <a href="http://localhost:6060/pkg/builtin/#error">error</a></pre>
+				<p>
+WritePluginVersion writes the current plugin version into a version file.
+This will be executed automatically by bpm after an new node is started or upgraded.
+</p>
+
+				
+				
+				
+			
+		
+	
+
+	
+
+
+
+
+
+
+
+<div id="footer">
+Build version go1.11.<br>
+Except as <a href="https://developers.google.com/site-policies#restrictions">noted</a>,
+the content of this page is licensed under the
+Creative Commons Attribution 3.0 License,
+and code is licensed under a <a href="http://localhost:6060/LICENSE">BSD license</a>.<br>
+<a href="http://localhost:6060/doc/tos.html">Terms of Service</a> |
+<a href="http://www.google.com/intl/en/policies/privacy/">Privacy Policy</a>
+</div>
+
+</div><!-- .container -->
+</div><!-- #page -->
+
+</body>
+</html>
+
