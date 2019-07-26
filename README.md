@@ -74,25 +74,25 @@ After the upgrade `bpm` will write the current plugin version to `~/.blockdaemon
 
 Package docker provides a simple docker abstraction layer that makes it very easy to start and remove docker containers, networks and volumes.
 
-For more information please refer to the [API documentation](./docs/api/pkg/gitlab.com/Blockdaemon/bpm-sdk/pkg/docker/index.html).
+For more information please refer to the [API documentation](./docs/docker.md).
 
 ## node
 
 Package node provides an easy way to access node related information.
 
-For more information please refer to the [API documentation](./docs/api/pkg/gitlab.com/Blockdaemon/bpm-sdk/pkg/node/index.html).
+For more information please refer to the [API documentation](./docs/node.md).
 
 ## template
 
 Package template implements functions to render Go templates to files using the node.Node struct as an imnput for the templates.
 
-For more information please refer to the [API documentation](./docs/api/pkg/gitlab.com/Blockdaemon/bpm-sdk/pkg/template/index.html).
+For more information please refer to the [API documentation](./docs/template.md).
 
 ## plugin
 
 Package plugin provides an easy way to create the required CLI for a plugin. It abstracts away all the command line and file parsing so users just need to implement the actual logic. 
 
-For more information please refer to [Implementing a plugin using the Go SDL](#implementing-a-plugin-using-the-go-sdk) and the [API documentation](./docs/api/pkg/gitlab.com/Blockdaemon/bpm-sdk/pkg/plugin/index.html).
+For more information please refer to [Implementing a plugin using the Go SDL](#implementing-a-plugin-using-the-go-sdk) and the [API documentation](./docs/plugin.md).
 
 # Implementing a plugin using the Go SDK
 
@@ -209,14 +209,31 @@ Generating the SDK documentation is currently a bit tricky for different reasons
 * `godoc -html` does not produce a nice output (https://github.com/golang/go/issues/2381)
 * `godoc` doesn't like symbolic links in the `GOROOT`. This breaks it when using homebrew on OSX.
 
-The recommended workarounds are:
+The recommended workarounds to use `wget` result in incorrect links if only the `bpm-sdk` parts of the documentation are exported.
 
-1. Create a folder structure that resembles the traditional go directory: `mkdir -p ~/go-mod/src/gitlab.com/Blockdaemon`
-2. Copy `bpm-sdk` into the new directory: `cp -rv bpm-sdk $HOME/go-mod/src/gitlab.com/Blockdaemon/`
-3. Set `GOPATH` to the new directory: `export GOPATH=$HOME/go-mod/`
-4. Run `godoc`: `godoc -http=localhost:6060 -goroot /usr/local/Cellar/go/1.12.7/libexec/`
-5. Go into the docs directory: `cd bpm-sdk/docs`
-6. Download the relevant files: `wget -e robots=off -r -np -N -E -p -k http://localhost:6060/pkg/gitlab.com/Blockdaemon/bpm-sdk`
-7. Rename downloaded directory: `mv localhost\:6060/ api`
+Until the above issues have been resolved, we are using (godocdown)[https://github.com/robertkrimen/godocdown] to generated markdown instead of html. Unfortunately `godocdown` doesn't work with modules yet so we still have to "fake" the go path.
+
+First, install `godocdown`: `go get github.com/robertkrimen/godocdown/godocdown`
+
+Then follow these steps:
+
+1. Change into the `bpm-sdk` directory: `cd bpm-sdk`
+2. Create a folder structure that resembles the traditional go directory: `mkdir -p ~/go-mod/src/gitlab.com/Blockdaemon`
+3. Symlink `bpm-sdk` into the new directory: `ln -s $(pwd) $HOME/go-mod/src/gitlab.com/Blockdaemon/bpm-sdk`
+4. Set `GOPATH` to the new directory: `export GOPATH=$HOME/go-mod/`
+5. Export all packages:
+   ```
+   godocdown gitlab.com/Blockdaemon/bpm-sdk/pkg/docker > docs/docker.md
+   godocdown gitlab.com/Blockdaemon/bpm-sdk/pkg/node > docs/node.md
+   godocdown gitlab.com/Blockdaemon/bpm-sdk/pkg/template > docs/template.md
+   godocdown gitlab.com/Blockdaemon/bpm-sdk/pkg/plugin > docs/plugin.md
+   ```
+
+
+
+
+
+
+godocdown gitlab.com/Blockdaemon/bpm-sdk/pkg/docker > docs/docker.md
 
 
