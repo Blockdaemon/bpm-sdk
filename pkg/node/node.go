@@ -10,7 +10,7 @@ import (
 	"encoding/json"
 	"path"
 	homedir "github.com/mitchellh/go-homedir"
-	"gitlab.com/Blockdaemon/bpm-sdk/internal/util"
+	"github.com/Blockdaemon/bpm-sdk/internal/util"
 )
 
 // Node represents a blockchain node, it's configuration and related information

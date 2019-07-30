@@ -1,6 +1,6 @@
 # docker
 --
-    import "gitlab.com/Blockdaemon/bpm-sdk/pkg/docker"
+    import "github.com/Blockdaemon/bpm-sdk/pkg/docker"
 
 Package docker provides a simple docker abstraction layer.
 

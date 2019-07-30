@@ -1,6 +1,6 @@
 # node
 --
-    import "gitlab.com/Blockdaemon/bpm-sdk/pkg/node"
+    import "github.com/Blockdaemon/bpm-sdk/pkg/node"
 
 Package node provides an easy way to access node related information.
 

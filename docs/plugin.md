@@ -1,6 +1,6 @@
 # plugin
 --
-    import "gitlab.com/Blockdaemon/bpm-sdk/pkg/plugin"
+    import "github.com/Blockdaemon/bpm-sdk/pkg/plugin"
 
 Package plugin provides an easy way to create the required CLI for a plugin. It
 abstracts away all the command line and file parsing so users just need to
@@ -14,8 +14,8 @@ Usage Example:
     package main
 
     import (
-    	"gitlab.com/Blockdaemon/bpm-sdk/pkg/plugin"
-    	"gitlab.com/Blockdaemon/bpm-sdk/pkg/node"
+    	"github.com/Blockdaemon/bpm-sdk/pkg/plugin"
+    	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 
     	"fmt"
     )

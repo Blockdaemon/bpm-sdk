@@ -1,6 +1,6 @@
 # template
 --
-    import "gitlab.com/Blockdaemon/bpm-sdk/pkg/template"
+    import "github.com/Blockdaemon/bpm-sdk/pkg/template"
 
 Package template implements functions to render Go templates to files using the
 node.Node struct as an imnput for the templates.

@@ -103,8 +103,8 @@ The easiest way to get started is to copy the example below and start implementi
 	package main
 
 	import (
-		"gitlab.com/Blockdaemon/bpm-sdk/pkg/plugin"
-		"gitlab.com/Blockdaemon/bpm-sdk/pkg/node"
+		"github.com/Blockdaemon/bpm-sdk/pkg/plugin"
+		"github.com/Blockdaemon/bpm-sdk/pkg/node"
 
 		"fmt"
 	)
@@ -218,15 +218,15 @@ First, install `godocdown`: `go get github.com/robertkrimen/godocdown/godocdown`
 Then follow these steps:
 
 1. Change into the `bpm-sdk` directory: `cd bpm-sdk`
-2. Create a folder structure that resembles the traditional go directory: `mkdir -p ~/go-mod/src/gitlab.com/Blockdaemon`
-3. Symlink `bpm-sdk` into the new directory: `ln -s $(pwd) $HOME/go-mod/src/gitlab.com/Blockdaemon/bpm-sdk`
+2. Create a folder structure that resembles the traditional go directory: `mkdir -p ~/go-mod/src/github.com/Blockdaemon`
+3. Symlink `bpm-sdk` into the new directory: `ln -s $(pwd) $HOME/go-mod/src/github.com/Blockdaemon/bpm-sdk`
 4. Set `GOPATH` to the new directory: `export GOPATH=$HOME/go-mod/`
 5. Export all packages:
    ```
-   godocdown gitlab.com/Blockdaemon/bpm-sdk/pkg/docker > docs/docker.md
-   godocdown gitlab.com/Blockdaemon/bpm-sdk/pkg/node > docs/node.md
-   godocdown gitlab.com/Blockdaemon/bpm-sdk/pkg/template > docs/template.md
-   godocdown gitlab.com/Blockdaemon/bpm-sdk/pkg/plugin > docs/plugin.md
+   godocdown github.com/Blockdaemon/bpm-sdk/pkg/docker > docs/docker.md
+   godocdown github.com/Blockdaemon/bpm-sdk/pkg/node > docs/node.md
+   godocdown github.com/Blockdaemon/bpm-sdk/pkg/template > docs/template.md
+   godocdown github.com/Blockdaemon/bpm-sdk/pkg/plugin > docs/plugin.md
    ```
 
 
@@ -234,6 +234,6 @@ Then follow these steps:
 
 
 
-godocdown gitlab.com/Blockdaemon/bpm-sdk/pkg/docker > docs/docker.md
+godocdown github.com/Blockdaemon/bpm-sdk/pkg/docker > docs/docker.md
 
 

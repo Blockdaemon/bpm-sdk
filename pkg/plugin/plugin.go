@@ -8,8 +8,8 @@
 //		package main
 //	
 //		import (
-//			"gitlab.com/Blockdaemon/bpm-sdk/pkg/plugin"
-//			"gitlab.com/Blockdaemon/bpm-sdk/pkg/node"
+//			"github.com/Blockdaemon/bpm-sdk/pkg/plugin"
+//			"github.com/Blockdaemon/bpm-sdk/pkg/node"
 //	
 //			"fmt"
 //		)
@@ -62,7 +62,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"gitlab.com/Blockdaemon/bpm-sdk/pkg/node"
+	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 )
 
 // Plugin describes and provides the functionality for a plugin
@@ -135,7 +135,7 @@ func Initialize(plugin Plugin) {
 		Short: "Starts the docker containers",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-				currentNode, err := node.LoadNode(baseDir, args[0])
+			currentNode, err := node.LoadNode(baseDir, args[0])
 				if err != nil {
 					return err
 				}

@@ -9,8 +9,8 @@ import (
 	"os"
 	"path"
 
-	"gitlab.com/Blockdaemon/bpm-sdk/pkg/node"
-	"gitlab.com/Blockdaemon/bpm-sdk/internal/util"
+	"github.com/Blockdaemon/bpm-sdk/pkg/node"
+	"github.com/Blockdaemon/bpm-sdk/internal/util"
 )
 
 // ConfigFileRendered renders a template with node confguration and writes it to disk if it doesn't exist yet
