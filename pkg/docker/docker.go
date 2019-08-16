@@ -193,6 +193,7 @@ type Container struct {
 	Mounts []Mount;
 	Ports []Port;
 	Cmd []string;
+	User string;
 }
 
 // ContainerRuns creates and starts a container if it doesn't exist/run yet
@@ -370,6 +371,7 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 		Image: container.Image,
 		Env: envs,
 		Cmd: container.Cmd,
+		User: container.User,
 	}
 
 	// Create a container with configs
