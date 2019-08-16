@@ -22,6 +22,7 @@ import (
 	dockercontainer "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"io/ioutil"
@@ -43,6 +44,44 @@ func NewBasicManager() (*BasicManager, error) {
 	return &BasicManager{
 		cli: cli,
 	}, nil
+}
+
+// ListContainerNames lists all containers by name
+func (bm *BasicManager) ListContainerNames(ctx context.Context) ([]string, error) {
+	containers, err := bm.cli.ContainerList(ctx, types.ContainerListOptions{All: true}) 
+	if err != nil {
+		return nil, err 
+	}
+
+	names := []string{}
+
+	for _, container := range(containers) {
+		names = append(names, container.Names...) // The ... "unpacks" the Names array to merge it with names
+	}
+
+	// Docker names have a "/" in front of them, this package expects them not to have that so we'll remove it
+	cleanNames := []string{}
+	for _, name := range(names) {
+		cleanNames = append(cleanNames, name[1:])
+	}
+
+	return cleanNames, nil
+}
+
+// ListVolumeIDs lists all volumes by name (which is also a unique id)
+func (bm *BasicManager) ListVolumeIDs(ctx context.Context) ([]string, error) {
+	volumesListOKBody, err := bm.cli.VolumeList(ctx, filters.Args{})
+	if err != nil {
+		return nil, err 
+	}
+
+	names := []string{}
+
+	for _, volume := range(volumesListOKBody.Volumes) {
+		names = append(names, volume.Name)
+	}
+
+	return names, nil
 }
 
 // ContainerAbset stops and removes a container if it is running/exists

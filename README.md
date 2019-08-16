@@ -98,7 +98,40 @@ For more information please refer to [Implementing a plugin using the Go SDL](#i
 
 The easiest way to get started is to copy the example below and start implementing the individual functions. Have a look at existing plugins for inspiration.
 
-## Example
+## Example with defaults
+
+The `plugin` package provides default functions for everything except the `Start` function:
+
+	package main
+
+	import (
+		"github.com/Blockdaemon/bpm-sdk/pkg/plugin"
+		"github.com/Blockdaemon/bpm-sdk/pkg/node"
+
+		"fmt"
+	)
+
+	var pluginVersion string
+
+	func start(currentNode node.Node) error {
+		fmt.Println("Nothing to do here, skipping start")
+		return nil
+	}
+
+	func main() {
+		plugin.Initialize(plugin.Plugin{
+			Name: "empty",
+			Description: "A plugin that does nothing",
+			Version: pluginVersion,
+			Start: start,
+			CreateSecrets: plugin.DefaultCreateSecrets,
+			CreateConfigs: plugin.DefaultCreateConfigs
+			Remove: plugin.DefaultRemove,
+			Upgrade: plugin.DefaultUpgrade,
+		})
+	}
+
+## Full Example
 
 	package main
 
@@ -142,9 +175,9 @@ The easiest way to get started is to copy the example below and start implementi
 			Name: "empty",
 			Description: "A plugin that does nothing",
 			Version: pluginVersion,
+			Start: start,
 			CreateSecrets: createSecrets,
 			CreateConfigs: createConfigs,
-			Start: start,
 			Remove: remove,
 			Upgrade: upgrade,
 		})
