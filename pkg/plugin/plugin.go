@@ -254,7 +254,7 @@ func DefaultCreateConfigs(currentNode node.Node) error {
 }
 
 // DefaultUpgrade does nothing except printing that it does nothing
-func DeafultUpgrade(currentNode node.Node) error {
+func DefaultUpgrade(currentNode node.Node) error {
 	fmt.Println("Nothing to do here, skipping upgrade")
 	return nil
 }
