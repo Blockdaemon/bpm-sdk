@@ -30,6 +30,8 @@ type Node struct {
 	NodeSubtype  string `json:"node_subtype"`
 	// Describes the protocol of this node (Examples: bitcoin, ethereum, polkadot, ...)
 	ProtocolType string `json:"protocol_type"`
+	// Describes the logstash configuration
+	Logstash LogstashConfig `json:"logstash"`
 
 	// Specific configuration settings for this node
 	Config map[string]interface{} `json:"config"`
@@ -42,6 +44,14 @@ type Node struct {
 	CurrentVersion string
 
 	baseDir string
+}
+
+// LogstashConfig represents the configuration for logstash
+type LogstashConfig struct {
+	Host string `json:"host"`
+	Certificate string `json:"certificate"`
+	CertificateAuthorities string `json:"certificate_authorities"`
+	Key string `json:"key"`
 }
 
 // DockerPrefix returns the prefix used as a convention when naming containers, volumes and networks
