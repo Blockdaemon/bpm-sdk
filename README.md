@@ -100,7 +100,6 @@ The easiest way to get started is to copy the example below and start implementi
 
 ## Example with defaults
 
-The `plugin` package provides default functions for everything except the `Start` function:
 
 	package main
 
@@ -261,12 +260,4 @@ Then follow these steps:
    godocdown github.com/Blockdaemon/bpm-sdk/pkg/template > docs/template.md
    godocdown github.com/Blockdaemon/bpm-sdk/pkg/plugin > docs/plugin.md
    ```
-
-
-
-
-
-
-godocdown github.com/Blockdaemon/bpm-sdk/pkg/docker > docs/docker.md
-
 
