@@ -13,7 +13,7 @@ func MakeDirectory(baseDir string, subDirs ...string) (string, error) {
 		return "", err
 	}
 
-	subDirs = append([]string{expandedBaseDir}, subDirs...)	
+	subDirs = append([]string{expandedBaseDir}, subDirs...)
 
 	path := filepath.Join(subDirs...)
 
@@ -23,12 +23,12 @@ func MakeDirectory(baseDir string, subDirs ...string) (string, error) {
 }
 
 func FileExists(name string) (bool, error) {
-    if _, err := os.Stat(name); err != nil {
-        if os.IsNotExist(err) {
-            return false, nil
-        }
+	if _, err := os.Stat(name); err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
 
-        return false, err
-    }
-    return true, nil
+		return false, err
+	}
+	return true, nil
 }

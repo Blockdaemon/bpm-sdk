@@ -6,11 +6,11 @@
 package node
 
 import (
-	"io/ioutil"
 	"encoding/json"
-	"path"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/Blockdaemon/bpm-sdk/internal/util"
+	homedir "github.com/mitchellh/go-homedir"
+	"io/ioutil"
+	"path"
 )
 
 // Node represents a blockchain node, it's configuration and related information
@@ -18,16 +18,16 @@ type Node struct {
 	// The global ID of this node
 	NodeGID string `json:"node_gid"`
 
-	// The global ID of the blockchain this node belongs to. 
+	// The global ID of the blockchain this node belongs to.
 	// This value becomes very relevant when running a private/permissioned Blockchain network
 	BlockchainGID string `json:"blockchain_gid"`
 
 	// Which blockchain network to connect to (Example: mainnet, ropsten, ...)
-	Environment  string `json:"environment"`
+	Environment string `json:"environment"`
 	// Describes the type of this blockchain network (Examples: public, private)
-	NetworkType  string `json:"network_type"`
+	NetworkType string `json:"network_type"`
 	// Describes the specific type of this node (Examples: validator, watcher, ...)
-	NodeSubtype  string `json:"node_subtype"`
+	NodeSubtype string `json:"node_subtype"`
 	// Describes the protocol of this node (Examples: bitcoin, ethereum, polkadot, ...)
 	ProtocolType string `json:"protocol_type"`
 	// Describes the logstash configuration
@@ -48,10 +48,10 @@ type Node struct {
 
 // LogstashConfig represents the configuration for logstash
 type LogstashConfig struct {
-	Host string `json:"host"`
-	Certificate string `json:"certificate"`
+	Host                   string `json:"host"`
+	Certificate            string `json:"certificate"`
 	CertificateAuthorities string `json:"certificate_authorities"`
-	Key string `json:"key"`
+	Key                    string `json:"key"`
 }
 
 // DockerPrefix returns the prefix used as a convention when naming containers, volumes and networks
@@ -104,7 +104,7 @@ func (c Node) SecretsDirectory() string {
 	return path.Join(c.NodeDirectory(), "secrets")
 }
 
-// WritePluginVersion writes the current plugin version into a version file. 
+// WritePluginVersion writes the current plugin version into a version file.
 // This will be executed automatically by bpm after an new node is started or upgraded.
 func (c Node) WritePluginVersion(version string) error {
 	c.CurrentVersion = version
@@ -145,36 +145,35 @@ func LoadNode(baseDir, nodeGID string) (Node, error) {
 	node.Secrets = make(map[string]interface{})
 
 	files, err := ioutil.ReadDir(node.SecretsDirectory())
-    if err != nil {
-    	return node, err
-    }
+	if err != nil {
+		return node, err
+	}
 
-    for _, f := range files {
-    	if !f.IsDir() {
-	    	secret, err := ioutil.ReadFile(path.Join(node.SecretsDirectory(), f.Name()))
-	    	if err != nil {
-	    		return node, err
-	    	}
+	for _, f := range files {
+		if !f.IsDir() {
+			secret, err := ioutil.ReadFile(path.Join(node.SecretsDirectory(), f.Name()))
+			if err != nil {
+				return node, err
+			}
 
-	    	node.Secrets[f.Name()] = string(secret)
-    	}
-    }
+			node.Secrets[f.Name()] = string(secret)
+		}
+	}
 
-    // Load installed version (if there is any)
-    exists, err := util.FileExists(node.CurrentVersionFile())
-    if err != nil {
-    	return node, err
-    }
+	// Load installed version (if there is any)
+	exists, err := util.FileExists(node.CurrentVersionFile())
+	if err != nil {
+		return node, err
+	}
 
-    if exists {
-    	versionData, err := ioutil.ReadFile(node.CurrentVersionFile())
-    	if err != nil {
-    		return node, err
-    	}
+	if exists {
+		versionData, err := ioutil.ReadFile(node.CurrentVersionFile())
+		if err != nil {
+			return node, err
+		}
 
-    	node.CurrentVersion = string(versionData)
-    }
+		node.CurrentVersion = string(versionData)
+	}
 
 	return node, nil
 }
-

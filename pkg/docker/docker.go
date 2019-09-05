@@ -5,7 +5,7 @@
 // the code that uses this package doesn't need to check if the container already runs, ContainerRuns does that internally
 // and just does nothing if the container is already running.
 //
-// Additionally it sometimes makes error handling simpler. If an particular method failed halfway, it can just be called 
+// Additionally it sometimes makes error handling simpler. If an particular method failed halfway, it can just be called
 // again without causing any issues.
 //
 // The general pattern used internally in this package is:
@@ -16,18 +16,18 @@
 package docker
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/api/types/mount"
 	"github.com/docker/docker/api/types/network"
-	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"io/ioutil"
 	"os"
-	"bufio"
 )
 
 type BasicManager struct {
@@ -48,20 +48,20 @@ func NewBasicManager() (*BasicManager, error) {
 
 // ListContainerNames lists all containers by name
 func (bm *BasicManager) ListContainerNames(ctx context.Context) ([]string, error) {
-	containers, err := bm.cli.ContainerList(ctx, types.ContainerListOptions{All: true}) 
+	containers, err := bm.cli.ContainerList(ctx, types.ContainerListOptions{All: true})
 	if err != nil {
-		return nil, err 
+		return nil, err
 	}
 
 	names := []string{}
 
-	for _, container := range(containers) {
+	for _, container := range containers {
 		names = append(names, container.Names...) // The ... "unpacks" the Names array to merge it with names
 	}
 
 	// Docker names have a "/" in front of them, this package expects them not to have that so we'll remove it
 	cleanNames := []string{}
-	for _, name := range(names) {
+	for _, name := range names {
 		cleanNames = append(cleanNames, name[1:])
 	}
 
@@ -72,12 +72,12 @@ func (bm *BasicManager) ListContainerNames(ctx context.Context) ([]string, error
 func (bm *BasicManager) ListVolumeIDs(ctx context.Context) ([]string, error) {
 	volumesListOKBody, err := bm.cli.VolumeList(ctx, filters.Args{})
 	if err != nil {
-		return nil, err 
+		return nil, err
 	}
 
 	names := []string{}
 
-	for _, volume := range(volumesListOKBody.Volumes) {
+	for _, volume := range volumesListOKBody.Volumes {
 		names = append(names, volume.Name)
 	}
 
@@ -108,8 +108,8 @@ func (bm *BasicManager) ContainerAbsent(ctx context.Context, containerName strin
 
 	if exists {
 		fmt.Printf("Removing container '%s'\n", containerName)
-	
-		if err := bm.cli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{ RemoveVolumes: true, }); err != nil {
+
+		if err := bm.cli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{RemoveVolumes: true}); err != nil {
 			return err
 		}
 	} else {
@@ -164,36 +164,36 @@ func (bm *BasicManager) NetworkExists(ctx context.Context, networkID string) err
 	}
 
 	fmt.Printf("Creating network '%s'\n", networkID)
-	_, err = bm.cli.NetworkCreate(ctx, networkID, types.NetworkCreate{ CheckDuplicate: true, })
+	_, err = bm.cli.NetworkCreate(ctx, networkID, types.NetworkCreate{CheckDuplicate: true})
 
 	return err
 }
 
 // Mount defines a docker volume mount
 type Mount struct {
-	Type string;
-	From string;
-	To string;
+	Type string
+	From string
+	To   string
 }
 
 // Port defines a forwarded docker port
 type Port struct {
-	HostIP string;
-	HostPort string;
-	ContainerPort string;
-	Protocol string;
+	HostIP        string
+	HostPort      string
+	ContainerPort string
+	Protocol      string
 }
 
 // Container defines all parameters used to create a container
 type Container struct {
-	Name string;
-	Image string;
-	NetworkID string;
-	EnvFilename string;
-	Mounts []Mount;
-	Ports []Port;
-	Cmd []string;
-	User string;
+	Name        string
+	Image       string
+	NetworkID   string
+	EnvFilename string
+	Mounts      []Mount
+	Ports       []Port
+	Cmd         []string
+	User        string
 }
 
 // ContainerRuns creates and starts a container if it doesn't exist/run yet
@@ -208,13 +208,13 @@ func (bm *BasicManager) ContainerRuns(ctx context.Context, container Container) 
 	}
 
 	if !exists {
-		fmt.Printf("Creating container '%s'\n", container.Name)	
+		fmt.Printf("Creating container '%s'\n", container.Name)
 
 		if err := bm.createContainer(ctx, container); err != nil {
 			return err
 		}
 	} else {
-		fmt.Printf("Container '%s' already exists, skipping creation\n", container.Name)	
+		fmt.Printf("Container '%s' already exists, skipping creation\n", container.Name)
 	}
 
 	running, err := bm.isContainerRunning(ctx, container.Name)
@@ -228,7 +228,7 @@ func (bm *BasicManager) ContainerRuns(ctx context.Context, container Container) 
 			return err
 		}
 	} else {
-		fmt.Printf("Container '%s' already runs, skipping start\n", container.Name)	
+		fmt.Printf("Container '%s' already runs, skipping start\n", container.Name)
 	}
 
 	return nil
@@ -237,7 +237,7 @@ func (bm *BasicManager) ContainerRuns(ctx context.Context, container Container) 
 func (bm *BasicManager) doesContainerExist(ctx context.Context, containerName string) (bool, error) {
 	_, err := bm.cli.ContainerInspect(ctx, containerName)
 	if err != nil {
-		if client.IsErrContainerNotFound(err) { 
+		if client.IsErrContainerNotFound(err) {
 			return false, nil
 		}
 
@@ -257,7 +257,6 @@ func (bm *BasicManager) doesNetworkExist(ctx context.Context, networkID string) 
 		return false, err
 	}
 
-
 	return true, nil
 }
 
@@ -271,16 +270,13 @@ func (bm *BasicManager) doesVolumeExist(ctx context.Context, volumeID string) (b
 		return false, err
 	}
 
-
 	return true, nil
 }
-
-
 
 func (bm *BasicManager) isContainerRunning(ctx context.Context, containerName string) (bool, error) {
 	inspect, err := bm.cli.ContainerInspect(ctx, containerName)
 	if err != nil {
-		if client.IsErrContainerNotFound(err) { 
+		if client.IsErrContainerNotFound(err) {
 			return false, nil // a non existing container is not running!
 		}
 
@@ -296,11 +292,11 @@ func (bm *BasicManager) pullImage(ctx context.Context, imageName string) error {
 		return err
 	}
 	defer out.Close()
-    if _, err := ioutil.ReadAll(out); err != nil {
-        return err
-    }
+	if _, err := ioutil.ReadAll(out); err != nil {
+		return err
+	}
 
-    return nil
+	return nil
 }
 
 func (bm *BasicManager) createContainer(ctx context.Context, container Container) error {
@@ -324,26 +320,26 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 		}
 
 		portBindings[containerPort] = []nat.PortBinding{
-			nat.PortBinding{
-				HostIP: portParameter.HostIP,
+			{
+				HostIP:   portParameter.HostIP,
 				HostPort: portParameter.HostPort,
 			},
 		}
 	}
 
 	// Mountpoints
-	var mounts []mount.Mount 
+	var mounts []mount.Mount
 	for _, mountParam := range container.Mounts {
-		mounts = append(mounts, mount.Mount {
-            Type:   mount.Type(mountParam.Type),
-            Source: mountParam.From,
-            Target: mountParam.To,
+		mounts = append(mounts, mount.Mount{
+			Type:   mount.Type(mountParam.Type),
+			Source: mountParam.From,
+			Target: mountParam.To,
 		})
 	}
 
 	// Host config
 	hostCfg := &dockercontainer.HostConfig{
-		Mounts: mounts,
+		Mounts:       mounts,
 		PortBindings: portBindings,
 		RestartPolicy: dockercontainer.RestartPolicy{
 			Name: "unless-stopped",
@@ -369,9 +365,9 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 	// Container config
 	containerCfg := &dockercontainer.Config{
 		Image: container.Image,
-		Env: envs,
-		Cmd: container.Cmd,
-		User: container.User,
+		Env:   envs,
+		Cmd:   container.Cmd,
+		User:  container.User,
 	}
 
 	// Create a container with configs
@@ -384,16 +380,16 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 }
 
 func readLines(path string) ([]string, error) {
-    file, err := os.Open(path)
-    if err != nil {
-        return nil, err
-    }
-    defer file.Close()
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
 
-    var lines []string
-    scanner := bufio.NewScanner(file)
-    for scanner.Scan() {
-        lines = append(lines, scanner.Text())
-    }
-    return lines, scanner.Err()
+	var lines []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+	return lines, scanner.Err()
 }
