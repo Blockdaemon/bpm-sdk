@@ -233,6 +233,10 @@ Important: Make sure the files are public!
 
 The following section contains information for the development of the BPM-SDK itself.
 
+## Continous Integration
+
+A CI pipeline runs on https://gitlab.com/blockdaemon-public/bpm-sdk-ci-pipeline
+
 ## Generate SDK documentation
 
 Generating the SDK documentation is currently a bit tricky for different reasons:
