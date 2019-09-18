@@ -82,7 +82,7 @@ func Initialize(plugin Plugin) {
 	}
 
 	pf := rootCmd.PersistentFlags()
-	pf.StringVar(&baseDir, "base-dir", "~/.blockdaemon/", "The directory in which plugins and configuration is stored")
+	pf.StringVar(&baseDir, "base-dir", "~/.bpm/", "The directory in which the node secrets and configuration are stored")
 
 	// Create the commands
 	var createSecretsCmd = &cobra.Command{
@@ -90,7 +90,8 @@ func Initialize(plugin Plugin) {
 		Short: "Creates the secrets for a blockchain node and stores them on disk",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.LoadNode(baseDir, args[0])
+			currentNode, err := node.Load(baseDir, args[0])
+
 			if err != nil {
 				return err
 			}
@@ -98,14 +99,13 @@ func Initialize(plugin Plugin) {
 			return plugin.CreateSecrets(currentNode)
 		},
 	}
-	rootCmd.AddCommand(createSecretsCmd)
 
 	var createConfigurationsCmd = &cobra.Command{
 		Use:   "create-configurations <node-id>",
 		Short: "Creates the configurations for a blockchain node and stores them on disk",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.LoadNode(baseDir, args[0])
+			currentNode, err := node.Load(baseDir, args[0])
 			if err != nil {
 				return err
 			}
@@ -113,14 +113,13 @@ func Initialize(plugin Plugin) {
 			return plugin.CreateConfigs(currentNode)
 		},
 	}
-	rootCmd.AddCommand(createConfigurationsCmd)
 
 	var startCmd = &cobra.Command{
 		Use:   "start <node-id>",
 		Short: "Starts the docker containers",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.LoadNode(baseDir, args[0])
+			currentNode, err := node.Load(baseDir, args[0])
 			if err != nil {
 				return err
 			}
@@ -128,14 +127,13 @@ func Initialize(plugin Plugin) {
 			return plugin.Start(currentNode)
 		},
 	}
-	rootCmd.AddCommand(startCmd)
 
 	var removeCmd = &cobra.Command{
 		Use:   "remove <node-id>",
 		Short: "Removes the docker containers",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.LoadNode(baseDir, args[0])
+			currentNode, err := node.Load(baseDir, args[0])
 			if err != nil {
 				return err
 			}
@@ -144,14 +142,13 @@ func Initialize(plugin Plugin) {
 		},
 	}
 	removeCmd.Flags().BoolVar(&purge, "purge", false, "Purge all data, secrets and configuration files")
-	rootCmd.AddCommand(removeCmd)
 
-	var upgrade = &cobra.Command{
+	var upgradeCmd = &cobra.Command{
 		Use:   "upgrade <node-id>",
 		Short: "Removes the docker containers",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.LoadNode(baseDir, args[0])
+			currentNode, err := node.Load(baseDir, args[0])
 			if err != nil {
 				return err
 			}
@@ -159,7 +156,6 @@ func Initialize(plugin Plugin) {
 			return plugin.Upgrade(currentNode)
 		},
 	}
-	rootCmd.AddCommand(upgrade)
 
 	var versionCmd = &cobra.Command{
 		Use:   "version",
@@ -168,7 +164,15 @@ func Initialize(plugin Plugin) {
 			fmt.Println(plugin.Version)
 		},
 	}
-	rootCmd.AddCommand(versionCmd)
+
+	rootCmd.AddCommand(
+		createSecretsCmd,
+		createConfigurationsCmd,
+		startCmd,
+		removeCmd,
+		upgradeCmd,
+		versionCmd,
+	)
 
 	// Start it all
 	if err := rootCmd.Execute(); err != nil {
@@ -230,6 +234,7 @@ func DefaultRemove(currentNode node.Node, purge bool) error {
 		if err != nil {
 			return err
 		}
+
 		for _, d := range dir {
 			if err := template.ConfigFileAbsent(d.Name(), currentNode); err != nil {
 				return err
