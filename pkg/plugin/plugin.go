@@ -64,8 +64,8 @@ type Plugin struct {
 	CreateConfigs func(currentNode node.Node) error
 	// Function to start the node. This usually involves creating a Docker network and starting containers
 	Start func(currentNode node.Node) error
-	// Function to remove a running node. This usually involves removing Docker resources and deleting generated configuration files
-	Remove func(currentNode node.Node, purge bool) error
+	// Function to stop a running node. This usually involves removing Docker containers
+	Stop func(currentNode node.Node, purge bool) error
 	// Function to upgrade a node with a new plugin version
 	Upgrade func(currentNode node.Node) error
 }
@@ -128,9 +128,9 @@ func Initialize(plugin Plugin) {
 		},
 	}
 
-	var removeCmd = &cobra.Command{
-		Use:   "remove <node-id>",
-		Short: "Removes the docker containers",
+	var stopCmd = &cobra.Command{
+		Use:   "stop <node-id>",
+		Short: "Stops the docker containers",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			currentNode, err := node.Load(baseDir, args[0])
@@ -138,10 +138,10 @@ func Initialize(plugin Plugin) {
 				return err
 			}
 
-			return plugin.Remove(currentNode, purge)
+			return plugin.Stop(currentNode, purge)
 		},
 	}
-	removeCmd.Flags().BoolVar(&purge, "purge", false, "Purge all data, secrets and configuration files")
+	stopCmd.Flags().BoolVar(&purge, "purge", false, "Purge all data volumes and configuration files")
 
 	var upgradeCmd = &cobra.Command{
 		Use:   "upgrade <node-id>",
@@ -169,7 +169,7 @@ func Initialize(plugin Plugin) {
 		createSecretsCmd,
 		createConfigurationsCmd,
 		startCmd,
-		removeCmd,
+		stopCmd,
 		upgradeCmd,
 		versionCmd,
 	)
@@ -181,10 +181,10 @@ func Initialize(plugin Plugin) {
 	}
 }
 
-// DefaultRemove removes all configuration files and containers, volumes, network based on naming conventions
+// DefaultStop removes all configuration files and containers, volumes, network based on naming conventions
 //
 // Container names and volume names for a particular node all start with "bd-<node-id>".
-func DefaultRemove(currentNode node.Node, purge bool) error {
+func DefaultStop(currentNode node.Node, purge bool) error {
 	client, err := docker.NewBasicManager()
 	if err != nil {
 		return err
