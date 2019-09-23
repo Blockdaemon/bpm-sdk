@@ -7,7 +7,6 @@ BPM is the Blockchain Package Manager by Blockdaemon. It allows easy and uniform
 BPM itself provides the framework, the actual deployment is performed by plugins. Plugins are just binaries that provide a common set of
 command line parameters (see [Plugin Lifecycle](#plugin-lifecycle))
 
-
 While it is possible to write plugins without an SDK, it is
 recommended and significantly easier to use the provided go SDK.
 
@@ -49,16 +48,28 @@ The last step is to get the version of the plugin. `bpm` will write this version
 
 ### Removal of a node
 
-Whenever a user runs: `bpm remove <plugin>`, bpm internally calls the plugin with the following parameters:
+Whenever a user runs: `bpm stop <plugin>`, bpm internally calls the plugin with the following parameters:
 
-	plugin-binary remove <node-id>
+	plugin-binary stop <node-id>
 
 This will stop all node processes and remove all active resources like docker containers. It will not remove any data or configuration. To achieve this, the user
-needs to run `bpm remove <plugin> --purge`. The `--purge` parameter will be passed through to the plugin like this:
+needs to run `bpm stop <plugin> --purge`. The `--purge` parameter will be passed through to the plugin like this:
 
-	plugin-binary remove <node-id> --purge
+	plugin-binary stop <node-id> --purge
 
 In this case the assumption is that the plugin also removes data and configuration files. It should not remove any secrets. The reason is that everything else can be re-created but secrets cannot.
+
+### Status
+
+Whenever a user runs: `bpm status`, bpm internally calls the plugin with the following parameters:
+
+	plugin-binary status <node-id>
+
+This will return either:
+
+- `running` if the node is currently running
+- `stopped` if the node is currently stopped
+- `incomplete` if parts of the node (e.g. only some containers) are running
 
 ### Upgrade
 
@@ -119,15 +130,20 @@ func start(currentNode node.Node) error {
 	return nil
 }
 
+func status(currentNode node.Node) (string, error) {
+	return "stopped", nil
+}
+
 func main() {
 	plugin.Initialize(plugin.Plugin{
 		Name: "empty",
 		Description: "A plugin that does nothing",
 		Version: version,
 		Start: start,
+		Status: status,
 		CreateSecrets: plugin.DefaultCreateSecrets,
 		CreateConfigs: plugin.DefaultCreateConfigs
-		Remove: plugin.DefaultRemove,
+		Stop: plugin.DefaultStop,
 		Upgrade: plugin.DefaultUpgrade,
 	})
 }
@@ -162,8 +178,11 @@ func start(currentNode node.Node) error {
 	return nil
 }
 
+func status(currentNode node.Node) (string, error) {
+	return "stopped", nil
+}
 
-func remove(currentNode node.Node, purge bool) error {
+func stop(currentNode node.Node, purge bool) error {
 	fmt.Println("Nothing to do here, skipping remove")
 	return nil
 }
@@ -179,9 +198,10 @@ func main() {
 		Description: "A plugin that does nothing",
 		Version: version,
 		Start: start,
+		Status: status,
 		CreateSecrets: createSecrets,
 		CreateConfigs: createConfigs,
-		Remove: remove,
+		Stop: stop,
 		Upgrade: upgrade,
 	})
 }

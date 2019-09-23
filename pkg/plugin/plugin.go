@@ -66,6 +66,8 @@ type Plugin struct {
 	Start func(currentNode node.Node) error
 	// Function to stop a running node. This usually involves removing Docker containers
 	Stop func(currentNode node.Node, purge bool) error
+	// Function to return the status (running, incomplete, stopped) of a  node
+	Status func(currentNode node.Node) (string, error)
 	// Function to upgrade a node with a new plugin version
 	Upgrade func(currentNode node.Node) error
 }
@@ -157,6 +159,26 @@ func Initialize(plugin Plugin) {
 		},
 	}
 
+	var statusCmd = &cobra.Command{
+		Use:   "status <node-id>",
+		Short: "Gives information about the current status",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			currentNode, err := node.Load(baseDir, args[0])
+			if err != nil {
+				return err
+			}
+
+			output, err := plugin.Status(currentNode)
+			if err != nil {
+				return err
+			}
+
+			fmt.Println(output)
+			return nil
+		},
+	}
+
 	var versionCmd = &cobra.Command{
 		Use:   "version",
 		Short: "Print the version of this plugin",
@@ -169,6 +191,7 @@ func Initialize(plugin Plugin) {
 		createSecretsCmd,
 		createConfigurationsCmd,
 		startCmd,
+		statusCmd,
 		stopCmd,
 		upgradeCmd,
 		versionCmd,
