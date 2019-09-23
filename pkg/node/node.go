@@ -12,6 +12,7 @@ import (
 	"path"
 
 	"github.com/Blockdaemon/bpm-sdk/internal/util"
+ 	homedir "github.com/mitchellh/go-homedir"
 )
 
 // Node represents a blockchain node, it's configuration and related information
@@ -78,7 +79,12 @@ func (c Node) VolumeName(volumeName string) string {
 
 // NodeDirectory returns the base directory under which all configuration, secrets and meta-data for this node is stored
 func (c Node) NodeDirectory() string {
-	return path.Join(c.baseDir, c.ID)
+	expandedBaseDir, err := homedir.Expand(c.baseDir)
+	if err != nil {
+		panic(err) // Should never happen because, at this stage, the directory should already be created
+	}
+
+	return path.Join(expandedBaseDir, c.ID)
 }
 
 // NodeFile returns the filepath in which the base configuration as well as meta-data from the PBG is stored
