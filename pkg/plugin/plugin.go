@@ -82,7 +82,7 @@ func Initialize(plugin Plugin) {
 	}
 
 	pf := rootCmd.PersistentFlags()
-	pf.StringVar(&baseDir, "base-dir", "~/.bpm/", "The directory in which the node secrets and configuration are stored")
+	pf.StringVar(&baseDir, "base-dir", "~/.bpm/nodes", "The directory in which the node secrets and configuration are stored")
 
 	// Create the commands
 	var createSecretsCmd = &cobra.Command{
