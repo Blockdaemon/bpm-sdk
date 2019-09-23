@@ -28,6 +28,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 type BasicManager struct {
@@ -193,6 +194,7 @@ type Container struct {
 	Mounts      []Mount
 	Ports       []Port
 	Cmd         []string
+	CmdFile     string
 	User        string
 }
 
@@ -362,11 +364,28 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 		EndpointsConfig: endpointsConfig,
 	}
 
+	// Command
+	cmd := []string{}
+	if len(container.Cmd) > 0 {
+		cmd = container.Cmd
+	} else if len(container.CmdFile) > 0 {
+		cmdFileContent, err := ioutil.ReadFile(container.CmdFile)
+		if err != nil {
+			return err
+		}
+
+		for _, parameter := range strings.Split(string(cmdFileContent), "\n") {
+			if len(parameter) > 0 {
+				cmd = append(cmd, strings.TrimSpace(parameter))
+			}
+		}
+	} 
+
 	// Container config
 	containerCfg := &dockercontainer.Config{
 		Image: container.Image,
 		Env:   envs,
-		Cmd:   container.Cmd,
+		Cmd:   cmd,
 		User:  container.User,
 	}
 
