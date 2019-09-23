@@ -61,6 +61,19 @@ func ConfigFileRendered(filename, templateContent string, node node.Node) error 
 
 	return nil
 }
+// ConfigFilesRendered renderes multiple templates to files
+//
+// Usage:
+func ConfigFilesRendered(filenamesAndTemplates map[string]string, node node.Node) error {
+	for filename, template := range filenamesAndTemplates {
+	    if err := ConfigFileRendered(filename, template, node); err != nil {
+	    	return err
+	    }
+
+	}
+
+    return nil
+}
 
 // ConfigFileAbsent deletes a file if it exists
 func ConfigFileAbsent(filename string, node node.Node) error {
