@@ -36,40 +36,33 @@
 package plugin
 
 import (
-	"context"
 	"fmt"
 	"os"
 
-	"io/ioutil"
-	"strings"
-	"time"
-
-	"github.com/Blockdaemon/bpm-sdk/pkg/docker"
 	"github.com/Blockdaemon/bpm-sdk/pkg/node"
-	"github.com/Blockdaemon/bpm-sdk/pkg/template"
 	"github.com/spf13/cobra"
 )
 
 // Plugin describes and provides the functionality for a plugin
-type Plugin struct {
-	// The name of the plugin
-	Name string
-	// A short one-line description of the plugin
-	Description string
-	// The semantic version of the plugin. Please increment with every change to the plugin
-	Version string
+type Plugin interface {
+	// Returns the name of the plugin
+	Name() string
+	// Returns a short one-line description of the plugin
+	Description() string
+	// Returns the semantic version of the plugin. Please increment with every change to the plugin
+	Version() string
 	// Function that creates the secrets for a node
-	CreateSecrets func(currentNode node.Node) error
+	CreateSecrets(currentNode node.Node) error
 	// Function that creates the configuration for the blockchain client
-	CreateConfigs func(currentNode node.Node) error
+	CreateConfigs(currentNode node.Node) error
 	// Function to start the node. This usually involves creating a Docker network and starting containers
-	Start func(currentNode node.Node) error
+	Start(currentNode node.Node) error
 	// Function to stop a running node. This usually involves removing Docker containers
-	Stop func(currentNode node.Node, purge bool) error
+	Stop(currentNode node.Node, purge bool) error
 	// Function to return the status (running, incomplete, stopped) of a  node
-	Status func(currentNode node.Node) (string, error)
+	Status(currentNode node.Node) (string, error)
 	// Function to upgrade a node with a new plugin version
-	Upgrade func(currentNode node.Node) error
+	Upgrade(currentNode node.Node) error
 }
 
 // Initialize creates the CLI for a plugin
@@ -79,8 +72,8 @@ func Initialize(plugin Plugin) {
 
 	// Initialize root command
 	var rootCmd = &cobra.Command{
-		Use:   plugin.Name,
-		Short: plugin.Description,
+		Use:   plugin.Name(),
+		Short: plugin.Description(),
 	}
 
 	pf := rootCmd.PersistentFlags()
@@ -204,84 +197,3 @@ func Initialize(plugin Plugin) {
 	}
 }
 
-// DefaultStop removes all configuration files and containers, volumes, network based on naming conventions
-//
-// Container names and volume names for a particular node all start with "bd-<node-id>".
-func DefaultStop(currentNode node.Node, purge bool) error {
-	client, err := docker.NewBasicManager(currentNode.DockerPrefix(), currentNode.ConfigsDirectory())
-	if err != nil {
-		return err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-
-	// Remove containers
-	containerNames, err := client.ListContainerNames(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, containerName := range containerNames {
-		if strings.HasPrefix(containerName, currentNode.DockerPrefix()) {
-			if err = client.ContainerAbsent(ctx, containerName); err != nil {
-				return err
-			}
-
-		}
-	}
-
-	// Remove network
-	if err = client.NetworkAbsent(ctx, currentNode.DockerNetworkName()); err != nil {
-		return err
-	}
-
-	if purge {
-		// Remove volumes
-		volumeNames, err := client.ListVolumeIDs(ctx)
-		if err != nil {
-			return err
-		}
-
-		for _, volumeName := range volumeNames {
-			if strings.HasPrefix(volumeName, currentNode.DockerPrefix()) {
-				if err = client.VolumeAbsent(ctx, volumeName); err != nil {
-					return err
-				}
-
-			}
-		}
-
-		// Remove all configuration files
-		dir, err := ioutil.ReadDir(currentNode.ConfigsDirectory())
-		if err != nil {
-			return err
-		}
-
-		for _, d := range dir {
-			if err := template.ConfigFileAbsent(d.Name(), currentNode); err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-}
-
-// DefaultCreateSecrets does nothing except printing that it does nothing
-func DefaultCreateSecrets(currentNode node.Node) error {
-	fmt.Println("Nothing to do here, skipping create-secrets")
-	return nil
-}
-
-// DefaultCreateConfigs does nothing except printing that it does nothing
-func DefaultCreateConfigs(currentNode node.Node) error {
-	fmt.Println("Nothing to do here, skipping create-configurations")
-	return nil
-}
-
-// DefaultUpgrade does nothing except printing that it does nothing
-func DefaultUpgrade(currentNode node.Node) error {
-	fmt.Println("Nothing to do here, skipping upgrade")
-	return nil
-}

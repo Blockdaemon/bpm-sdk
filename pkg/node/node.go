@@ -57,14 +57,9 @@ type Collection struct {
 	Key  string `json:"key"`
 }
 
-// DockerPrefix returns the prefix used as a convention when naming containers, volumes and networks
-func (c Node) DockerPrefix() string {
-	return fmt.Sprintf("bd-%s-", c.ID)
-}
-
-// DockerNetworkName returns the recommended name for a docker network in which this node runs
-func (c Node) DockerNetworkName() string {
-	return c.DockerPrefix()
+// NamePrefix returns the prefix used as a convention when naming containers, volumes, networks, etc.
+func (c Node) NamePrefix() string {
+	return fmt.Sprintf("bpm-%s-", c.ID)
 }
 
 // NodeDirectory returns the base directory under which all configuration, secrets and meta-data for this node is stored

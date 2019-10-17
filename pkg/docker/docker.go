@@ -250,7 +250,7 @@ func (bm *BasicManager) ContainerRuns(ctx context.Context, container Container) 
 		return err
 	}
 	if !running {
-		fmt.Printf("Starting container '%s'\n", container.Name)
+		fmt.Printf("Starting container '%s'\n", bm.prefixedName(container.Name))
 
 		if err := bm.cli.ContainerStart(ctx, bm.prefixedName(container.Name), types.ContainerStartOptions{}); err != nil {
 			return err
@@ -391,7 +391,7 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 	// Network config
 	endpointsConfig := make(map[string]*network.EndpointSettings)
 	endpointsConfig[container.NetworkID] = &network.EndpointSettings{
-		NetworkID: container.NetworkID,
+		NetworkID: bm.prefixedName(container.NetworkID),
 	}
 	networkConfig := &network.NetworkingConfig{
 		EndpointsConfig: endpointsConfig,
