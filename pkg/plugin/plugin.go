@@ -196,4 +196,3 @@ func Initialize(plugin Plugin) {
 		os.Exit(1)
 	}
 }
-

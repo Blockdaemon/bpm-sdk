@@ -33,8 +33,8 @@ import (
 )
 
 type BasicManager struct {
-	cli *client.Client
-	prefix string
+	cli      *client.Client
+	prefix   string
 	basePath string
 }
 
@@ -49,8 +49,8 @@ func NewBasicManager(prefix, basePath string) (*BasicManager, error) {
 	}
 
 	return &BasicManager{
-		cli: cli,
-		prefix: prefix,
+		cli:      cli,
+		prefix:   prefix,
 		basePath: basePath,
 	}, nil
 }
@@ -412,7 +412,7 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 				cmd = append(cmd, strings.TrimSpace(parameter))
 			}
 		}
-	} 
+	}
 
 	// Container config
 	containerCfg := &dockercontainer.Config{
