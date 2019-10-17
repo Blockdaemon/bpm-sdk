@@ -208,7 +208,7 @@ func Initialize(plugin Plugin) {
 //
 // Container names and volume names for a particular node all start with "bd-<node-id>".
 func DefaultStop(currentNode node.Node, purge bool) error {
-	client, err := docker.NewBasicManager(currentNode.DockerPrefix())
+	client, err := docker.NewBasicManager(currentNode.DockerPrefix(), currentNode.ConfigsDirectory())
 	if err != nil {
 		return err
 	}

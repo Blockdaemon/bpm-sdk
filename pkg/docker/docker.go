@@ -28,18 +28,21 @@ import (
 	"github.com/docker/go-connections/nat"
 	"io/ioutil"
 	"os"
+	"path"
 	"strings"
 )
 
 type BasicManager struct {
 	cli *client.Client
 	prefix string
+	basePath string
 }
 
 // NewBasicManager creates a BasicManager
 //
 // prefix is a string that gets added to every container-, network-, volume-name, etc. started by this client
-func NewBasicManager(prefix string) (*BasicManager, error) {
+// basePath is a path that gets added to every relative file paths. Example with basePath = /home/user/.bpm/nodes/xyz/config: test.yml becomes /home/user/.bpm/nodes/xyz/config/test.yml
+func NewBasicManager(prefix, basePath string) (*BasicManager, error) {
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return nil, err
@@ -48,6 +51,7 @@ func NewBasicManager(prefix string) (*BasicManager, error) {
 	return &BasicManager{
 		cli: cli,
 		prefix: prefix,
+		basePath: basePath,
 	}, nil
 }
 
@@ -58,6 +62,15 @@ func (bm *BasicManager) prefixedName(name string) string {
 	}
 
 	return bm.prefix + name
+}
+
+func (bm *BasicManager) addBasePath(myPath string) string {
+	if strings.HasPrefix(myPath, "/") {
+		// absolute path, just return as is
+		return myPath
+	}
+
+	return path.Join(bm.basePath, myPath)
 }
 
 // ListContainerNames lists all containers by name
@@ -345,9 +358,16 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 	// Mountpoints
 	var mounts []mount.Mount
 	for _, mountParam := range container.Mounts {
+
+		from := mountParam.From
+		if mountParam.Type == "bind" {
+			from = bm.addBasePath(mountParam.From)
+
+		}
+
 		mounts = append(mounts, mount.Mount{
 			Type:   mount.Type(mountParam.Type),
-			Source: mountParam.From,
+			Source: from,
 			Target: mountParam.To,
 		})
 	}
@@ -382,7 +402,7 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 	if len(container.Cmd) > 0 {
 		cmd = container.Cmd
 	} else if len(container.CmdFile) > 0 {
-		cmdFileContent, err := ioutil.ReadFile(container.CmdFile)
+		cmdFileContent, err := ioutil.ReadFile(bm.addBasePath(container.CmdFile))
 		if err != nil {
 			return err
 		}
