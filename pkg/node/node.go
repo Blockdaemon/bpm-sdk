@@ -7,9 +7,9 @@ package node
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"path"
+	"fmt"
 
 	"github.com/Blockdaemon/bpm-sdk/internal/util"
  	homedir "github.com/mitchellh/go-homedir"
@@ -59,22 +59,12 @@ type Collection struct {
 
 // DockerPrefix returns the prefix used as a convention when naming containers, volumes and networks
 func (c Node) DockerPrefix() string {
-	return fmt.Sprintf("bd-%s", c.ID)
+	return fmt.Sprintf("bd-%s-", c.ID)
 }
 
 // DockerNetworkName returns the recommended name for a docker network in which this node runs
 func (c Node) DockerNetworkName() string {
 	return c.DockerPrefix()
-}
-
-// ContainerName takes a simple name for a docker container and returns it formatted according to package conventions
-func (c Node) ContainerName(containerName string) string {
-	return c.DockerPrefix() + "-" + containerName
-}
-
-// VolumeName converts a name for a docker volume and returns it formatted according to package conventions
-func (c Node) VolumeName(volumeName string) string {
-	return c.DockerPrefix() + "-" + volumeName
 }
 
 // NodeDirectory returns the base directory under which all configuration, secrets and meta-data for this node is stored

@@ -33,10 +33,13 @@ import (
 
 type BasicManager struct {
 	cli *client.Client
+	prefix string
 }
 
 // NewBasicManager creates a BasicManager
-func NewBasicManager() (*BasicManager, error) {
+//
+// prefix is a string that gets added to every container-, network-, volume-name, etc. started by this client
+func NewBasicManager(prefix string) (*BasicManager, error) {
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return nil, err
@@ -44,7 +47,17 @@ func NewBasicManager() (*BasicManager, error) {
 
 	return &BasicManager{
 		cli: cli,
+		prefix: prefix,
 	}, nil
+}
+
+func (bm *BasicManager) prefixedName(name string) string {
+	// make sure we don't accidentally double-prefix it
+	if strings.HasPrefix(name, bm.prefix) {
+		return name
+	}
+
+	return bm.prefix + name
 }
 
 // ListContainerNames lists all containers by name
@@ -95,11 +108,11 @@ func (bm *BasicManager) ContainerAbsent(ctx context.Context, containerName strin
 	if running {
 		fmt.Printf("Stopping container '%s'\n", containerName)
 
-		if err := bm.cli.ContainerStop(ctx, containerName, nil); err != nil {
+		if err := bm.cli.ContainerStop(ctx, bm.prefixedName(containerName), nil); err != nil {
 			return err
 		}
 	} else {
-		fmt.Printf("Container '%s' is not running, skipping stop\n", containerName)
+		fmt.Printf("Container '%s' is not running, skipping stop\n", bm.prefixedName(containerName))
 	}
 
 	exists, err := bm.doesContainerExist(ctx, containerName)
@@ -108,9 +121,9 @@ func (bm *BasicManager) ContainerAbsent(ctx context.Context, containerName strin
 	}
 
 	if exists {
-		fmt.Printf("Removing container '%s'\n", containerName)
+		fmt.Printf("Removing container '%s'\n", bm.prefixedName(containerName))
 
-		if err := bm.cli.ContainerRemove(ctx, containerName, types.ContainerRemoveOptions{RemoveVolumes: true}); err != nil {
+		if err := bm.cli.ContainerRemove(ctx, bm.prefixedName(containerName), types.ContainerRemoveOptions{RemoveVolumes: true}); err != nil {
 			return err
 		}
 	} else {
@@ -128,12 +141,12 @@ func (bm *BasicManager) NetworkAbsent(ctx context.Context, networkID string) err
 	}
 
 	if !exists {
-		fmt.Printf("Cannot find network '%s', skipping removal\n", networkID)
+		fmt.Printf("Cannot find network '%s', skipping removal\n", bm.prefixedName(networkID))
 		return nil
 	}
 
-	fmt.Printf("Removing network '%s'\n", networkID)
-	return bm.cli.NetworkRemove(ctx, networkID)
+	fmt.Printf("Removing network '%s'\n", bm.prefixedName(networkID))
+	return bm.cli.NetworkRemove(ctx, bm.prefixedName(networkID))
 }
 
 // VolumeAbsent removes a network if it exists
@@ -144,12 +157,12 @@ func (bm *BasicManager) VolumeAbsent(ctx context.Context, volumeID string) error
 	}
 
 	if !exists {
-		fmt.Printf("Cannot find volume '%s', skipping removal\n", volumeID)
+		fmt.Printf("Cannot find volume '%s', skipping removal\n", bm.prefixedName(volumeID))
 		return nil
 	}
 
-	fmt.Printf("Removing volume '%s'\n", volumeID)
-	return bm.cli.VolumeRemove(ctx, volumeID, false)
+	fmt.Printf("Removing volume '%s'\n", bm.prefixedName(volumeID))
+	return bm.cli.VolumeRemove(ctx, bm.prefixedName(volumeID), false)
 }
 
 // NetworkExists creates a network if it doesn't exist yet
@@ -160,12 +173,12 @@ func (bm *BasicManager) NetworkExists(ctx context.Context, networkID string) err
 	}
 
 	if exists {
-		fmt.Printf("Network '%s' already exists, skipping creation\n", networkID)
+		fmt.Printf("Network '%s' already exists, skipping creation\n", bm.prefixedName(networkID))
 		return nil
 	}
 
-	fmt.Printf("Creating network '%s'\n", networkID)
-	_, err = bm.cli.NetworkCreate(ctx, networkID, types.NetworkCreate{CheckDuplicate: true})
+	fmt.Printf("Creating network '%s'\n", bm.prefixedName(networkID))
+	_, err = bm.cli.NetworkCreate(ctx, bm.prefixedName(networkID), types.NetworkCreate{CheckDuplicate: true})
 
 	return err
 }
@@ -210,13 +223,13 @@ func (bm *BasicManager) ContainerRuns(ctx context.Context, container Container) 
 	}
 
 	if !exists {
-		fmt.Printf("Creating container '%s'\n", container.Name)
+		fmt.Printf("Creating container '%s'\n", bm.prefixedName(container.Name))
 
 		if err := bm.createContainer(ctx, container); err != nil {
 			return err
 		}
 	} else {
-		fmt.Printf("Container '%s' already exists, skipping creation\n", container.Name)
+		fmt.Printf("Container '%s' already exists, skipping creation\n", bm.prefixedName(container.Name))
 	}
 
 	running, err := bm.IsContainerRunning(ctx, container.Name)
@@ -226,18 +239,18 @@ func (bm *BasicManager) ContainerRuns(ctx context.Context, container Container) 
 	if !running {
 		fmt.Printf("Starting container '%s'\n", container.Name)
 
-		if err := bm.cli.ContainerStart(ctx, container.Name, types.ContainerStartOptions{}); err != nil {
+		if err := bm.cli.ContainerStart(ctx, bm.prefixedName(container.Name), types.ContainerStartOptions{}); err != nil {
 			return err
 		}
 	} else {
-		fmt.Printf("Container '%s' already runs, skipping start\n", container.Name)
+		fmt.Printf("Container '%s' already runs, skipping start\n", bm.prefixedName(container.Name))
 	}
 
 	return nil
 }
 
 func (bm *BasicManager) doesContainerExist(ctx context.Context, containerName string) (bool, error) {
-	_, err := bm.cli.ContainerInspect(ctx, containerName)
+	_, err := bm.cli.ContainerInspect(ctx, bm.prefixedName(containerName))
 	if err != nil {
 		if client.IsErrContainerNotFound(err) {
 			return false, nil
@@ -250,7 +263,7 @@ func (bm *BasicManager) doesContainerExist(ctx context.Context, containerName st
 }
 
 func (bm *BasicManager) doesNetworkExist(ctx context.Context, networkID string) (bool, error) {
-	_, err := bm.cli.NetworkInspect(ctx, networkID)
+	_, err := bm.cli.NetworkInspect(ctx, bm.prefixedName(networkID))
 	if err != nil {
 		if client.IsErrNetworkNotFound(err) {
 			return false, nil
@@ -263,7 +276,7 @@ func (bm *BasicManager) doesNetworkExist(ctx context.Context, networkID string) 
 }
 
 func (bm *BasicManager) doesVolumeExist(ctx context.Context, volumeID string) (bool, error) {
-	_, err := bm.cli.VolumeInspect(ctx, volumeID)
+	_, err := bm.cli.VolumeInspect(ctx, bm.prefixedName(volumeID))
 	if err != nil {
 		if client.IsErrVolumeNotFound(err) {
 			return false, nil
@@ -276,7 +289,7 @@ func (bm *BasicManager) doesVolumeExist(ctx context.Context, volumeID string) (b
 }
 
 func (bm *BasicManager) IsContainerRunning(ctx context.Context, containerName string) (bool, error) {
-	inspect, err := bm.cli.ContainerInspect(ctx, containerName)
+	inspect, err := bm.cli.ContainerInspect(ctx, bm.prefixedName(containerName))
 	if err != nil {
 		if client.IsErrContainerNotFound(err) {
 			return false, nil // a non existing container is not running!
@@ -390,7 +403,7 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 	}
 
 	// Create a container with configs
-	_, err = bm.cli.ContainerCreate(ctx, containerCfg, hostCfg, networkConfig, container.Name)
+	_, err = bm.cli.ContainerCreate(ctx, containerCfg, hostCfg, networkConfig, bm.prefixedName(container.Name))
 	if err != nil {
 		return err
 	}
