@@ -29,7 +29,33 @@ type DockerPlugin struct {
 	description string
 }
 
+const (
+	filebeatContainerImage = "docker.elastic.co/beats/filebeat:7.3.1"
+	filebeatContainerName  = "filebeat"
+	filebeatConfigFile     = "filebeat.yml"
+)
+
 func NewDockerPlugin(name, description, version string, containers []docker.Container, configFilesAndTemplates map[string]string) Plugin {
+	// Add filebeat to the passed in containers
+	filebeatContainer := docker.Container{
+		Name:      filebeatContainerName,
+		Image:     filebeatContainerImage,
+		Cmd:       []string{"-e", "-strict.perms=false"},
+		// using the first containers network is a decent default, if we ever do mult-network deployments we may need to rethink this
+		NetworkID: containers[0].NetworkID,
+		Mounts: []docker.Mount{
+			{
+				Type: "bind",
+				From: filebeatConfigFile,
+				To:   "/usr/share/filebeat/filebeat.yml",
+			},
+		},
+		User: "root",
+	}
+
+	containers = append(containers, filebeatContainer)
+	configFilesAndTemplates[filebeatConfigFile] = filebeatConfigTpl
+
 	return DockerPlugin{
 		configFilesAndTemplates: configFilesAndTemplates,
 		containers:              containers,
