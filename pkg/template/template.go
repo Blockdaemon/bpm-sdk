@@ -13,6 +13,11 @@ import (
 	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 )
 
+type TemplateData struct {
+	Node       node.Node
+	Data       map[string]interface{} // This allows plugins to add additional data. E.g. a docker plugin can add container data
+}
+
 // ConfigFileRendered renders a template with node confguration and writes it to disk if it doesn't exist yet
 //
 // In order to allow comma separated lists in the template it defines the template
@@ -22,8 +27,8 @@ import (
 //		"${{ $id }}"{{if notLast $index $.Config.core.quorum_set_ids}},{{end}}
 //		{{end -}}
 //
-func ConfigFileRendered(filename, templateContent string, node node.Node) error {
-	outputFilename := path.Join(node.ConfigsDirectory(), filename)
+func ConfigFileRendered(filename, templateContent string, templateData TemplateData) error {
+	outputFilename := path.Join(templateData.Node.ConfigsDirectory(), filename)
 
 	exists, err := util.FileExists(outputFilename)
 	if err != nil {
@@ -50,7 +55,7 @@ func ConfigFileRendered(filename, templateContent string, node node.Node) error 
 
 	output := bytes.NewBufferString("")
 
-	err = tmpl.Execute(output, node)
+	err = tmpl.Execute(output, templateData)
 	if err != nil {
 		return err
 	}
@@ -65,9 +70,9 @@ func ConfigFileRendered(filename, templateContent string, node node.Node) error 
 // ConfigFilesRendered renderes multiple templates to files
 //
 // Usage:
-func ConfigFilesRendered(filenamesAndTemplates map[string]string, node node.Node) error {
+func ConfigFilesRendered(filenamesAndTemplates map[string]string, templateData TemplateData) error {
 	for filename, template := range filenamesAndTemplates {
-		if err := ConfigFileRendered(filename, template, node); err != nil {
+		if err := ConfigFileRendered(filename, template, templateData); err != nil {
 			return err
 		}
 

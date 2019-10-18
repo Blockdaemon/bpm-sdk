@@ -91,7 +91,12 @@ func (d DockerPlugin) Upgrade(currentNode node.Node) error {
 
 // CreateConfigs creates configuration files for the blockchain client
 func (d DockerPlugin) CreateConfigs(currentNode node.Node) error {
-	return template.ConfigFilesRendered(d.configFilesAndTemplates, currentNode)
+	return template.ConfigFilesRendered(d.configFilesAndTemplates, template.TemplateData{
+		Node: currentNode,
+		Data: map[string]interface{}{
+			"Containers": d.containers,
+		},
+	})
 }
 
 // Start starts monitoring agents and delegates to another function to start blockchain containers
