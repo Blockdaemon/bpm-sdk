@@ -222,6 +222,7 @@ type Container struct {
 	Cmd         []string
 	CmdFile     string
 	User        string
+	CollectLogs bool
 }
 
 // ContainerRuns creates and starts a container if it doesn't exist/run yet

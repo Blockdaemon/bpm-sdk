@@ -2,15 +2,11 @@ package plugin
 
 const (
 	filebeatConfigTpl = `filebeat.inputs:
-- type: docker
-  containers.ids: 
-  - '*'                                                   // TODO
-
-filebeat.config:
-  modules:
-    path: ${path.config}/modules.d/*.yml
-    reload.enabled: false
-
+- type: container
+// filebeat.config:
+//   modules:
+//     path: ${path.config}/modules.d/*.yml
+//     reload.enabled: false
 fields:
     info:
         launch_type: bpm
@@ -31,19 +27,15 @@ output:
             - /etc/ssl/beats/ca.crt
             key: /etc/ssl/beats/beat.key
 processors:
--   add_host_metadata: null
--   add_cloud_metadata: null
--   add_docker_metadata: null
--   add_fields:
-        fields.log_type: user
-        target: ''
-        when.or:
-        -   equals.container.name: xrp
--   add_fields:
-        fields.log_type: system
-        target: ''
-        when.not.and:
-        -   equals.container.name: xrp
--   drop_event.when.not.equals.log_type: user
+- drop_event:
+        when:
+            not:
+                or:
+                    {{- range .Data.Containers }}
+                    {{- if .CollectLogs }}
+                    - equals.container.name: {{ $.Node.NamePrefix }}{{ .Name }}
+                    {{- end }}
+                    {{- end }}
+
 `
 )
