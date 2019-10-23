@@ -76,6 +76,7 @@ func Initialize(plugin Plugin) {
 	var rootCmd = &cobra.Command{
 		Use:   plugin.Name(),
 		Short: plugin.Description(),
+		SilenceUsage: true,
 	}
 
 	pf := rootCmd.PersistentFlags()
@@ -219,7 +220,6 @@ func Initialize(plugin Plugin) {
 
 	// Start it all
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(1)
 	}
 }
