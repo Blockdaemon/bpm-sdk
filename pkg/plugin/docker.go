@@ -89,6 +89,12 @@ func (d DockerPlugin) Upgrade(currentNode node.Node) error {
 	return nil
 }
 
+// Test does nothing except printing that it does nothing
+func (d DockerPlugin) Test(currentNode node.Node) (bool, error) {
+	fmt.Println("Nothing to do here, skipping test")
+	return true, nil
+}
+
 // CreateConfigs creates configuration files for the blockchain client
 func (d DockerPlugin) CreateConfigs(currentNode node.Node) error {
 	return template.ConfigFilesRendered(d.configFilesAndTemplates, template.TemplateData{

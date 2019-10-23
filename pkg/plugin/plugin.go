@@ -63,6 +63,8 @@ type Plugin interface {
 	Status(currentNode node.Node) (string, error)
 	// Function to upgrade a node with a new plugin version
 	Upgrade(currentNode node.Node) error
+	// Function to run tests against the node
+	Test(currentNode node.Node) (bool, error)
 }
 
 // Initialize creates the CLI for a plugin
@@ -172,6 +174,30 @@ func Initialize(plugin Plugin) {
 		},
 	}
 
+	var testCmd = &cobra.Command{
+		Use:   "test <node-id>",
+		Short: "Runs a test suite against the running node",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			currentNode, err := node.Load(baseDir, args[0])
+			if err != nil {
+				return err
+			}
+
+			success, err := plugin.Test(currentNode)
+
+			if err != nil {
+				return err
+			}
+
+			if !success {
+				return fmt.Errorf("tests failed") // this causes a non-zero exit code
+			}
+
+			return nil
+		},
+	}
+
 	var versionCmd = &cobra.Command{
 		Use:   "version",
 		Short: "Print the version of this plugin",
@@ -185,6 +211,7 @@ func Initialize(plugin Plugin) {
 		createConfigurationsCmd,
 		startCmd,
 		statusCmd,
+		testCmd,
 		stopCmd,
 		upgradeCmd,
 		versionCmd,
