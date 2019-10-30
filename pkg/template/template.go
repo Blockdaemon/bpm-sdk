@@ -14,8 +14,8 @@ import (
 )
 
 type TemplateData struct {
-	Node       node.Node
-	Data       map[string]interface{} // This allows plugins to add additional data. E.g. a docker plugin can add container data
+	Node node.Node
+	Data map[string]interface{} // This allows plugins to add additional data. E.g. a docker plugin can add container data
 }
 
 // ConfigFileRendered renders a template with node confguration and writes it to disk if it doesn't exist yet

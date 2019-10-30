@@ -65,6 +65,8 @@ type Plugin interface {
 	Upgrade(currentNode node.Node) error
 	// Function to run tests against the node
 	Test(currentNode node.Node) (bool, error)
+	// Returns available parameters to configure a node
+	Parameters() string
 }
 
 // Initialize creates the CLI for a plugin
@@ -74,8 +76,8 @@ func Initialize(plugin Plugin) {
 
 	// Initialize root command
 	var rootCmd = &cobra.Command{
-		Use:   plugin.Name(),
-		Short: plugin.Description(),
+		Use:          plugin.Name(),
+		Short:        plugin.Description(),
 		SilenceUsage: true,
 	}
 
@@ -207,6 +209,14 @@ func Initialize(plugin Plugin) {
 		},
 	}
 
+	var parametersCmd = &cobra.Command{
+		Use:   "parameters",
+		Short: "Shows allowed parameters for node.json",
+		Run: func(cmd *cobra.Command, args []string) {
+			fmt.Println(plugin.Parameters())
+		},
+	}
+
 	rootCmd.AddCommand(
 		createSecretsCmd,
 		createConfigurationsCmd,
@@ -216,6 +226,7 @@ func Initialize(plugin Plugin) {
 		stopCmd,
 		upgradeCmd,
 		versionCmd,
+		parametersCmd,
 	)
 
 	// Start it all
