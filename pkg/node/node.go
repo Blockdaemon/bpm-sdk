@@ -38,9 +38,6 @@ type Node struct {
 	// Describes the collection configuration
 	Collection Collection `json:"collection"`
 
-	// Specific configuration settings for this node
-	Config map[string]interface{} `json:"config"`
-
 	// Secrets (Example: Private keys)
 	Secrets map[string]interface{} `json:"-"` // No json here, never serialize secrets!
 
