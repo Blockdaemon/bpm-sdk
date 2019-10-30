@@ -3,21 +3,18 @@ package plugin
 const (
 	filebeatConfigTpl = `filebeat.inputs:
 - type: container
-// filebeat.config:
-//   modules:
-//     path: ${path.config}/modules.d/*.yml
-//     reload.enabled: false
+  containers.ids:
+  - '*'
 fields:
     info:
         launch_type: bpm
         node_xid: {{ .Node.ID }}
-        project: development
-        protocol_type: POLKADOT
-        network_type: public
-        user_id: TODO
+        protocol_type: {{ .Node.Subtype }}
+        network_type: {{ .Node.NetworkType }}
         environment: {{ .Node.Environment }}
 fields_under_root: true
 output:
+{{- if .Node.Collection.Host }}
     logstash:
         hosts:
         - "{{ .Node.Collection.Host }}"
@@ -26,6 +23,10 @@ output:
             certificate_authorities:
             - /etc/ssl/beats/ca.crt
             key: /etc/ssl/beats/beat.key
+{{- else }}
+    console:
+        pretty: true
+{{- end }}
 processors:
 - drop_event:
         when:

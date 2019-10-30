@@ -133,40 +133,42 @@ func (d DockerPlugin) Start(currentNode node.Node) error {
 	//////////////////////////////////////////////////////////////////////////////
 	// TODO: This is just temporarily until we have a proper authentication system
 	//////////////////////////////////////////////////////////////////////////////
-	currentNode.Collection.Key, err = homedir.Expand(currentNode.Collection.Key)
-	if err != nil {
-		return err
-	}
-	currentNode.Collection.Cert, err = homedir.Expand(currentNode.Collection.Cert)
-	if err != nil {
-		return err
-	}
-	currentNode.Collection.CA, err = homedir.Expand(currentNode.Collection.CA)
-	if err != nil {
-		return err
-	}
+	if currentNode.Collection.Host != "" {
+		currentNode.Collection.Key, err = homedir.Expand(currentNode.Collection.Key)
+		if err != nil {
+			return err
+		}
+		currentNode.Collection.Cert, err = homedir.Expand(currentNode.Collection.Cert)
+		if err != nil {
+			return err
+		}
+		currentNode.Collection.CA, err = homedir.Expand(currentNode.Collection.CA)
+		if err != nil {
+			return err
+		}
 
-	for ix, container := range d.containers {
-		if strings.HasSuffix(container.Name, "beat") { // yeah, I know, super hacky but it's just temporarily
-			fmt.Printf("Add ssl certs to container: %s\n", container.Name)
-			sslMounts := []docker.Mount{
-				{
-					Type: "bind",
-					From: currentNode.Collection.CA,
-					To:   "/etc/ssl/beats/ca.crt",
-				},
-				{
-					Type: "bind",
-					From: currentNode.Collection.Cert,
-					To:   "/etc/ssl/beats/beat.crt",
-				},
-				{
-					Type: "bind",
-					From: currentNode.Collection.Key,
-					To:   "/etc/ssl/beats/beat.key",
-				},
+		for ix, container := range d.containers {
+			if strings.HasSuffix(container.Name, "beat") { // yeah, I know, super hacky but it's just temporarily
+				fmt.Printf("Add ssl certs to container: %s\n", container.Name)
+				sslMounts := []docker.Mount{
+					{
+						Type: "bind",
+						From: currentNode.Collection.CA,
+						To:   "/etc/ssl/beats/ca.crt",
+					},
+					{
+						Type: "bind",
+						From: currentNode.Collection.Cert,
+						To:   "/etc/ssl/beats/beat.crt",
+					},
+					{
+						Type: "bind",
+						From: currentNode.Collection.Key,
+						To:   "/etc/ssl/beats/beat.key",
+					},
+				}
+				d.containers[ix].Mounts = append(container.Mounts, sslMounts...)
 			}
-			d.containers[ix].Mounts = append(container.Mounts, sslMounts...)
 		}
 	}
 	//////////////////////////////////////////////////////////////////////////////
