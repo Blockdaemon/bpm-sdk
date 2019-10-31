@@ -3,8 +3,8 @@ package plugin
 const (
 	filebeatConfigTpl = `filebeat.inputs:
 - type: container
-  containers.ids:
-  - '*'
+  paths: 
+  - '/var/lib/docker/containers/*/*.log'
 fields:
     info:
         launch_type: bpm
