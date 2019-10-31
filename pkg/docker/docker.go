@@ -142,7 +142,7 @@ func (bm *BasicManager) ContainerAbsent(ctx context.Context, containerName strin
 			return err
 		}
 	} else {
-		fmt.Printf("Cannot find container '%s', skipping removel\n", containerName)
+		fmt.Printf("Cannot find container '%s', skipping removel\n", prefixedName)
 	}
 
 	return nil
@@ -373,7 +373,8 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 		from := mountParam.From
 		if mountParam.Type == "bind" {
 			from = bm.addBasePath(mountParam.From)
-
+		} else { // volume
+			from = bm.prefixedName(mountParam.From)
 		}
 
 		mounts = append(mounts, mount.Mount{
