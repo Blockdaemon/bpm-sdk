@@ -113,6 +113,8 @@ func (bm *BasicManager) ListVolumeIDs(ctx context.Context) ([]string, error) {
 
 // ContainerAbset stops and removes a container if it is running/exists
 func (bm *BasicManager) ContainerAbsent(ctx context.Context, containerName string) error {
+	prefixedName := bm.prefixedName(containerName)
+
 	running, err := bm.IsContainerRunning(ctx, containerName)
 	if err != nil {
 		return err
@@ -121,11 +123,11 @@ func (bm *BasicManager) ContainerAbsent(ctx context.Context, containerName strin
 	if running {
 		fmt.Printf("Stopping container '%s'\n", containerName)
 
-		if err := bm.cli.ContainerStop(ctx, bm.prefixedName(containerName), nil); err != nil {
+		if err := bm.cli.ContainerStop(ctx, prefixedName, nil); err != nil {
 			return err
 		}
 	} else {
-		fmt.Printf("Container '%s' is not running, skipping stop\n", bm.prefixedName(containerName))
+		fmt.Printf("Container '%s' is not running, skipping stop\n", prefixedName)
 	}
 
 	exists, err := bm.doesContainerExist(ctx, containerName)
@@ -134,9 +136,9 @@ func (bm *BasicManager) ContainerAbsent(ctx context.Context, containerName strin
 	}
 
 	if exists {
-		fmt.Printf("Removing container '%s'\n", bm.prefixedName(containerName))
+		fmt.Printf("Removing container '%s'\n", prefixedName)
 
-		if err := bm.cli.ContainerRemove(ctx, bm.prefixedName(containerName), types.ContainerRemoveOptions{RemoveVolumes: true}); err != nil {
+		if err := bm.cli.ContainerRemove(ctx, prefixedName, types.ContainerRemoveOptions{RemoveVolumes: true}); err != nil {
 			return err
 		}
 	} else {
@@ -153,13 +155,15 @@ func (bm *BasicManager) NetworkAbsent(ctx context.Context, networkID string) err
 		return err
 	}
 
+	prefixedName := bm.prefixedName(networkID)
+
 	if !exists {
-		fmt.Printf("Cannot find network '%s', skipping removal\n", bm.prefixedName(networkID))
+		fmt.Printf("Cannot find network '%s', skipping removal\n", prefixedName)
 		return nil
 	}
 
-	fmt.Printf("Removing network '%s'\n", bm.prefixedName(networkID))
-	return bm.cli.NetworkRemove(ctx, bm.prefixedName(networkID))
+	fmt.Printf("Removing network '%s'\n", prefixedName)
+	return bm.cli.NetworkRemove(ctx, prefixedName)
 }
 
 // VolumeAbsent removes a network if it exists
@@ -169,13 +173,15 @@ func (bm *BasicManager) VolumeAbsent(ctx context.Context, volumeID string) error
 		return err
 	}
 
+	prefixedName := bm.prefixedName(volumeID)
+
 	if !exists {
-		fmt.Printf("Cannot find volume '%s', skipping removal\n", bm.prefixedName(volumeID))
+		fmt.Printf("Cannot find volume '%s', skipping removal\n", prefixedName)
 		return nil
 	}
 
-	fmt.Printf("Removing volume '%s'\n", bm.prefixedName(volumeID))
-	return bm.cli.VolumeRemove(ctx, bm.prefixedName(volumeID), false)
+	fmt.Printf("Removing volume '%s'\n", prefixedName)
+	return bm.cli.VolumeRemove(ctx, prefixedName, false)
 }
 
 // NetworkExists creates a network if it doesn't exist yet
@@ -185,13 +191,15 @@ func (bm *BasicManager) NetworkExists(ctx context.Context, networkID string) err
 		return err
 	}
 
+	prefixedName := bm.prefixedName(networkID)
+
 	if exists {
-		fmt.Printf("Network '%s' already exists, skipping creation\n", bm.prefixedName(networkID))
+		fmt.Printf("Network '%s' already exists, skipping creation\n", prefixedName)
 		return nil
 	}
 
-	fmt.Printf("Creating network '%s'\n", bm.prefixedName(networkID))
-	_, err = bm.cli.NetworkCreate(ctx, bm.prefixedName(networkID), types.NetworkCreate{CheckDuplicate: true})
+	fmt.Printf("Creating network '%s'\n", prefixedName)
+	_, err = bm.cli.NetworkCreate(ctx, prefixedName, types.NetworkCreate{CheckDuplicate: true})
 
 	return err
 }
@@ -236,14 +244,16 @@ func (bm *BasicManager) ContainerRuns(ctx context.Context, container Container) 
 		return err
 	}
 
+	prefixedName := bm.prefixedName(container.Name)
+
 	if !exists {
-		fmt.Printf("Creating container '%s'\n", bm.prefixedName(container.Name))
+		fmt.Printf("Creating container '%s'\n", prefixedName)
 
 		if err := bm.createContainer(ctx, container); err != nil {
 			return err
 		}
 	} else {
-		fmt.Printf("Container '%s' already exists, skipping creation\n", bm.prefixedName(container.Name))
+		fmt.Printf("Container '%s' already exists, skipping creation\n", prefixedName)
 	}
 
 	running, err := bm.IsContainerRunning(ctx, container.Name)
@@ -251,13 +261,13 @@ func (bm *BasicManager) ContainerRuns(ctx context.Context, container Container) 
 		return err
 	}
 	if !running {
-		fmt.Printf("Starting container '%s'\n", bm.prefixedName(container.Name))
+		fmt.Printf("Starting container '%s'\n", prefixedName)
 
-		if err := bm.cli.ContainerStart(ctx, bm.prefixedName(container.Name), types.ContainerStartOptions{}); err != nil {
+		if err := bm.cli.ContainerStart(ctx, prefixedName, types.ContainerStartOptions{}); err != nil {
 			return err
 		}
 	} else {
-		fmt.Printf("Container '%s' already runs, skipping start\n", bm.prefixedName(container.Name))
+		fmt.Printf("Container '%s' already runs, skipping start\n", prefixedName)
 	}
 
 	return nil
