@@ -216,10 +216,8 @@ func (d DockerPlugin) Status(currentNode node.Node) (string, error) {
 	return "incomplete", nil
 }
 
-// DockerStop removes all configuration files and containers, volumes, network based on naming conventions
-//
-// Container names and volume names for a particular node all start with "bd-<node-id>".
-func (d DockerPlugin) Stop(currentNode node.Node, purge bool) error {
+// DockerStop removes all containers
+func (d DockerPlugin) Stop(currentNode node.Node) error {
 	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
 	if err != nil {
 		return err
@@ -234,30 +232,58 @@ func (d DockerPlugin) Stop(currentNode node.Node, purge bool) error {
 		}
 	}
 
-	// Remove network(s)
+	return nil
+}
+
+// Removes any data (typically the blockchain itself) related to the node
+func (d DockerPlugin) RemoveData(currentNode node.Node) error {
+	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+	// Remove volumes
 	for _, container := range d.containers {
-		if err := client.NetworkAbsent(ctx, container.NetworkID); err != nil {
+		for _, mount := range container.Mounts {
+			if mount.Type == "volume" {
+				if err = client.VolumeAbsent(ctx, mount.From); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// Removes configuration files related to the node
+func (d DockerPlugin) RemoveConfig(currentNode node.Node) error {
+	// Remove all configuration files
+	for file := range d.configFilesAndTemplates {
+		if err := template.ConfigFileAbsent(file, currentNode); err != nil {
 			return err
 		}
 	}
 
-	if purge {
-		// Remove volumes
-		for _, container := range d.containers {
-			for _, mount := range container.Mounts {
-				if mount.Type == "volume" {
-					if err = client.VolumeAbsent(ctx, mount.From); err != nil {
-						return err
-					}
-				}
-			}
-		}
+	return nil
+}
 
-		// Remove all configuration files
-		for file := range d.configFilesAndTemplates {
-			if err := template.ConfigFileAbsent(file, currentNode); err != nil {
-				return err
-			}
+// Removes the docker network
+func (d DockerPlugin) RemoveNode(currentNode node.Node) error {
+	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	defer cancel()
+
+	// Remove network(s)
+	for _, container := range d.containers {
+		if err := client.NetworkAbsent(ctx, container.NetworkID); err != nil {
+			return err
 		}
 	}
 

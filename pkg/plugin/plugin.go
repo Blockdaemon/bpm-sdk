@@ -55,10 +55,10 @@ type Plugin interface {
 	CreateSecrets(currentNode node.Node) error
 	// Function that creates the configuration for the blockchain client
 	CreateConfigs(currentNode node.Node) error
-	// Function to start the node. This usually involves creating a Docker network and starting containers
+	// Function to start the node
 	Start(currentNode node.Node) error
-	// Function to stop a running node. This usually involves removing Docker containers
-	Stop(currentNode node.Node, purge bool) error
+	// Function to stop a running node
+	Stop(currentNode node.Node) error
 	// Function to return the status (running, incomplete, stopped) of a  node
 	Status(currentNode node.Node) (string, error)
 	// Function to upgrade a node with a new plugin version
@@ -67,12 +67,17 @@ type Plugin interface {
 	Test(currentNode node.Node) (bool, error)
 	// Returns available parameters to configure a node
 	Parameters() string
+	// Removes any data (typically the blockchain itself) related to the node
+	RemoveData(currentNode node.Node) error
+	// Removes configuration related to the node
+	RemoveConfig(currentNode node.Node) error
+	// Removes everything other than data and configuration related to the node
+	RemoveNode(currentNode node.Node) error
 }
 
 // Initialize creates the CLI for a plugin
 func Initialize(plugin Plugin) {
 	var baseDir string
-	var purge bool
 
 	// Initialize root command
 	var rootCmd = &cobra.Command{
@@ -138,10 +143,9 @@ func Initialize(plugin Plugin) {
 				return err
 			}
 
-			return plugin.Stop(currentNode, purge)
+			return plugin.Stop(currentNode)
 		},
 	}
-	stopCmd.Flags().BoolVar(&purge, "purge", false, "Purge all data volumes and configuration files")
 
 	var upgradeCmd = &cobra.Command{
 		Use:   "upgrade <node-id>",
@@ -217,6 +221,48 @@ func Initialize(plugin Plugin) {
 		},
 	}
 
+	var removeConfigCmd = &cobra.Command{
+		Use:   "remove-config <node-id>",
+		Short: "Remove the node configuration files",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			currentNode, err := node.Load(baseDir, args[0])
+			if err != nil {
+				return err
+			}
+
+			return plugin.RemoveConfig(currentNode)
+		},
+	}
+
+	var removeDataCmd = &cobra.Command{
+		Use:   "remove-data <node-id>",
+		Short: "Remove the node data",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			currentNode, err := node.Load(baseDir, args[0])
+			if err != nil {
+				return err
+			}
+
+			return plugin.RemoveData(currentNode)
+		},
+	}
+
+	var removeNodeCmd = &cobra.Command{
+		Use:   "remove-node <node-id>",
+		Short: "Remove everything related to the node itself but no data or configs",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			currentNode, err := node.Load(baseDir, args[0])
+			if err != nil {
+				return err
+			}
+
+			return plugin.RemoveNode(currentNode)
+		},
+	}
+
 	rootCmd.AddCommand(
 		createSecretsCmd,
 		createConfigurationsCmd,
@@ -227,6 +273,9 @@ func Initialize(plugin Plugin) {
 		upgradeCmd,
 		versionCmd,
 		parametersCmd,
+		removeConfigCmd,
+		removeDataCmd,
+		removeNodeCmd,
 	)
 
 	// Start it all
