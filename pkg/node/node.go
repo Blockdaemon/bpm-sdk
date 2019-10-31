@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"path"
+	"os"
 
 	"github.com/Blockdaemon/bpm-sdk/internal/util"
 	homedir "github.com/mitchellh/go-homedir"
@@ -84,23 +85,41 @@ func (c Node) SecretsDirectory() string {
 	return path.Join(c.NodeDirectory(), "secrets")
 }
 
-// Load all the data for a particular node and creates all required directories
-func Load(baseDir, id string) (Node, error) {
-	node := Node{
+// Save the node data
+func (c Node) Save() error {
+	// Create node directories if they don't exist yet
+	_, err := util.MakeDirectory(c.SecretsDirectory())
+	if err != nil {
+		return err
+	}
+
+	_, err = util.MakeDirectory(c.ConfigsDirectory())
+	if err != nil {
+		return err
+	}
+
+	data, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(
+		c.NodeFile(),
+		data,
+		os.ModePerm,
+	)
+}
+
+func New(baseDir, id string) Node {
+	return Node{
 		baseDir: baseDir,
 		ID:      id,
 	}
+}
 
-	// Create node directories if they don't exist yet
-	_, err := util.MakeDirectory(node.SecretsDirectory())
-	if err != nil {
-		return node, err
-	}
-
-	_, err = util.MakeDirectory(node.ConfigsDirectory())
-	if err != nil {
-		return node, err
-	}
+// Load all the data for a particular node and creates all required directories
+func Load(baseDir, id string) (Node, error) {
+	node := New(baseDir, id)
 
 	// Load node data
 	nodeData, err := ioutil.ReadFile(node.NodeFile())
@@ -133,3 +152,4 @@ func Load(baseDir, id string) (Node, error) {
 
 	return node, nil
 }
+
