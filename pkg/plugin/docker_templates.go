@@ -9,7 +9,7 @@ fields:
     info:
         launch_type: bpm
         node_xid: {{ .Node.ID }}
-        protocol_type: {{ .Node.Subtype }}
+        protocol_type: {{ .Node.Protocol }}
         network_type: {{ .Node.NetworkType }}
         environment: {{ .Node.Environment }}
 fields_under_root: true
