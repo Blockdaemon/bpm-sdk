@@ -33,7 +33,7 @@ type DockerPlugin struct {
 }
 
 const (
-	filebeatContainerImage = "docker.elastic.co/beats/filebeat:7.3.1"
+	filebeatContainerImage = "docker.elastic.co/beats/filebeat:7.4.1"
 	filebeatContainerName  = "filebeat"
 	filebeatConfigFile     = "filebeat.yml"
 )
