@@ -52,6 +52,11 @@ func NewDockerPlugin(name, description, version string, containers []docker.Cont
 				From: filebeatConfigFile,
 				To:   "/usr/share/filebeat/filebeat.yml",
 			},
+			{
+				Type: "bind",
+				From: "/var/lib/docker/containers",
+				To:   "/var/lib/docker/containers",
+			},
 		},
 		User: "root",
 	}
