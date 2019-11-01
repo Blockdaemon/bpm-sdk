@@ -27,16 +27,5 @@ output:
     console:
         pretty: true
 {{- end }}
-processors:
-- drop_event:
-        when:
-            not:
-                or:
-                    {{- range .Data.Containers }}
-                    {{- if .CollectLogs }}
-                    - equals.container.name: {{ $.Node.NamePrefix }}{{ .Name }}
-                    {{- end }}
-                    {{- end }}
-
 `
 )
