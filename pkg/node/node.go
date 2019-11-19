@@ -23,8 +23,11 @@ type Node struct {
 	// The global ID of this node
 	ID string `json:"id"`
 
+	// The plugin name
+	PluginName string `json:"plugin"`
+
 	// Which blockchain network to connect to (Example: mainnet, ropsten, ...)
-	Environment string `json:"environment"`
+	Network string `json:"network"`
 
 	// Describes the type of this blockchain network (Examples: public, private)
 	NetworkType string `json:"networkType"`
