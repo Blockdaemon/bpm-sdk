@@ -11,7 +11,7 @@ fields:
         node_xid: {{ .Node.ID }}
         protocol_type: {{ .Node.Protocol }}
         network_type: {{ .Node.NetworkType }}
-        environment: {{ .Node.Environment }}
+        environment: {{ .Node.Network }}
 fields_under_root: true
 output:
 {{- if .Node.Collection.Host }}
