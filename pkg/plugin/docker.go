@@ -24,12 +24,10 @@ type DockerPlugin struct {
 	// All containers that should be managed by this plugin
 	containers []docker.Container
 
-	// Holds all available options for parameters
-	parameters Parameters
+	// Plugin meta information
+	meta MetaInfo
 
-	name        string
-	version     string
-	description string
+	name string
 }
 
 const (
@@ -38,7 +36,7 @@ const (
 	filebeatConfigFile     = "filebeat.yml"
 )
 
-func NewDockerPlugin(name, description, version string, containers []docker.Container, configFilesAndTemplates map[string]string, parameters Parameters) Plugin {
+func NewDockerPlugin(name string, containers []docker.Container, configFilesAndTemplates map[string]string, meta MetaInfo) Plugin {
 	// Add filebeat to the passed in containers
 	filebeatContainer := docker.Container{
 		Name:  filebeatContainerName,
@@ -68,9 +66,7 @@ func NewDockerPlugin(name, description, version string, containers []docker.Cont
 		configFilesAndTemplates: configFilesAndTemplates,
 		containers:              containers,
 		name:                    name,
-		description:             description,
-		version:                 version,
-		parameters:              parameters,
+		meta:                    meta,
 	}
 }
 
@@ -78,16 +74,8 @@ func (d DockerPlugin) Name() string {
 	return d.name
 }
 
-func (d DockerPlugin) Version() string {
-	return d.version
-}
-
-func (d DockerPlugin) Description() string {
-	return d.description
-}
-
-func (d DockerPlugin) Parameters() string {
-	return d.parameters.String()
+func (d DockerPlugin) Meta() MetaInfo {
+	return d.meta
 }
 
 // CreateSecrets does nothing except printing that it does nothing

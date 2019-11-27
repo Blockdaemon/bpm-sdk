@@ -6,12 +6,9 @@ const (
   paths: 
   - '/var/lib/docker/containers/*/*.log'
 fields:
-    info:
+    node:
         launch_type: bpm
-        node_xid: {{ .Node.ID }}
-        protocol_type: {{ .Node.Protocol }}
-        network_type: {{ .Node.NetworkType }}
-        environment: {{ .Node.Network }}
+        xid: {{ .Node.ID }}
 fields_under_root: true
 output:
 {{- if .Node.Collection.Host }}
