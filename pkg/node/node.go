@@ -132,6 +132,16 @@ func Load(nodeFile string) (Node, error) {
 		return node, err
 	}
 
+	// Create node directories if they don't exist yet
+	_, err = util.MakeDirectory(node.SecretsDirectory())
+	if err != nil {
+		return node, err
+	}
+	_, err = util.MakeDirectory(node.ConfigsDirectory())
+	if err != nil {
+		return node, err
+	}
+
 	// Load secrets
 	node.Secrets = make(map[string]interface{})
 
