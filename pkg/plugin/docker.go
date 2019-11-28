@@ -220,7 +220,7 @@ func (d DockerPlugin) Stop(currentNode node.Node) error {
 	defer cancel()
 
 	for _, container := range d.containers {
-		if err = client.ContainerAbsent(ctx, container.Name); err != nil {
+		if err = client.ContainerStopped(ctx, container.Name, container.NetworkID); err != nil {
 			return err
 		}
 	}
@@ -263,15 +263,21 @@ func (d DockerPlugin) RemoveConfig(currentNode node.Node) error {
 	return nil
 }
 
-// Removes the docker network
-func (d DockerPlugin) RemoveNode(currentNode node.Node) error {
+// Removes the docker network and containers
+func (d DockerPlugin) RemoveRuntime(currentNode node.Node) error {
 	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
 	if err != nil {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
+
+	for _, container := range d.containers {
+		if err = client.ContainerAbsent(ctx, container.Name, container.NetworkID); err != nil {
+			return err
+		}
+	}
 
 	// Remove network(s)
 	for _, container := range d.containers {

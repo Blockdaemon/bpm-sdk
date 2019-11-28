@@ -67,7 +67,7 @@ type Plugin interface {
 	// Removes configuration related to the node
 	RemoveConfig(currentNode node.Node) error
 	// Removes everything other than data and configuration related to the node
-	RemoveNode(currentNode node.Node) error
+	RemoveRuntime(currentNode node.Node) error
 	// Return plugin meta information such as: What's supported, possible parameters
 	Meta() MetaInfo
 }
@@ -209,8 +209,8 @@ func Initialize(plugin Plugin) {
 		},
 	}
 
-	var removeNodeCmd = &cobra.Command{
-		Use:   "remove-node <node-file>",
+	var removeRuntimeCmd = &cobra.Command{
+		Use:   "remove-runtime <node-file>",
 		Short: "Remove everything related to the node itself but no data or configs",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -219,7 +219,7 @@ func Initialize(plugin Plugin) {
 				return err
 			}
 
-			return plugin.RemoveNode(currentNode)
+			return plugin.RemoveRuntime(currentNode)
 		},
 	}
 
@@ -233,7 +233,7 @@ func Initialize(plugin Plugin) {
 		metaInfoCmd,
 		removeConfigCmd,
 		removeDataCmd,
-		removeNodeCmd,
+		removeRuntimeCmd,
 	)
 
 	if funk.Contains(plugin.Meta().Supported, SupportsTest) {
