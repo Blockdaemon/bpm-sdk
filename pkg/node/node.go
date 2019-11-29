@@ -6,6 +6,7 @@
 package node
 
 import (
+	"strings"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -132,6 +133,10 @@ func Load(nodeFile string) (Node, error) {
 		return node, err
 	}
 
+	// TODO: Using directories here as a shortcut. Not every plugin will use directories.
+	//       E.g. if a plugin runs on k8s it might create k8s secrets.
+	//       We will neeed to refactor this at some point!
+
 	// Create node directories if they don't exist yet
 	_, err = util.MakeDirectory(node.SecretsDirectory())
 	if err != nil {
@@ -157,7 +162,18 @@ func Load(nodeFile string) (Node, error) {
 				return node, err
 			}
 
-			node.Secrets[f.Name()] = string(secret)
+			// as a convenience we parse json here so that individual elements
+			// can be referenced when rendering templates
+			if strings.HasSuffix(f.Name(), ".json") {
+				var data interface{}
+				if err := json.Unmarshal(secret, &data); err != nil {
+					return node, err
+				}
+
+				node.Secrets[f.Name()] = data
+			} else {
+				node.Secrets[f.Name()] = string(secret)
+			}
 		}
 	}
 
