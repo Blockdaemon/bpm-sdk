@@ -40,6 +40,9 @@ type Node struct {
 	// Secrets (Example: Private keys)
 	Secrets map[string]interface{} `json:"-"` // No json here, never serialize secrets!
 
+	// Holding place for data that is generated at runtime. E.g. can be used to store data parsed from the parameters
+	Data map[string]interface{} `json:"-"` // No json here, runtime data only
+
 	// The package version used to install this node (if installed yet)
 	// This is useful to know in order to run migrations on upgrades.
 	Version string `json:"version"`
