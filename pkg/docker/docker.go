@@ -360,7 +360,7 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 	var envs []string
 	var err error
 	if container.EnvFilename != "" {
-		envs, err = readLines(container.EnvFilename)
+		envs, err = readLines(bm.addBasePath(container.EnvFilename))
 		if err != nil {
 			return err
 		}
