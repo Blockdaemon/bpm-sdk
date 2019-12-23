@@ -84,12 +84,12 @@ func (d DockerPlugin) ValidateParameters(currentNode node.Node) error {
 
 		if parameter.Type == ParameterTypeBool {
 			_, ok = currentNode.BoolParameters[parameter.Name]
-		} 
+		}
 
 		if parameter.Type == ParameterTypeString {
 			_, ok = currentNode.StrParameters[parameter.Name]
 
-		} 
+		}
 
 		if !ok {
 			return fmt.Errorf(`%q missing`, parameter.Name)
@@ -110,7 +110,7 @@ func (d DockerPlugin) CreateSecrets(currentNode node.Node) error {
 
 // The default upgrade strategy removes all containers. If they where running they get started again which will pull new container images.
 //
-// This works as long as only the container version changes. If the the upgrade needs changes to the configs or migrations tasks it is 
+// This works as long as only the container version changes. If the the upgrade needs changes to the configs or migrations tasks it is
 // recommended to overwrite this function
 func (d DockerPlugin) Upgrade(currentNode node.Node) error {
 	status, err := d.Status(currentNode)

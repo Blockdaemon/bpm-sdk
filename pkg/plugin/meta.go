@@ -8,7 +8,7 @@ const (
 	ParameterTypeBool   = "bool"
 	ParameterTypeString = "string"
 
-	SupportsTest        = "test"
+	SupportsTest = "test"
 )
 
 type Parameter struct {
@@ -20,11 +20,11 @@ type Parameter struct {
 }
 
 type MetaInfo struct {
-	Version               string
-	Description           string
+	Version         string
+	Description     string
 	ProtocolVersion string `yaml:"protocol_version"`
-	Parameters            []Parameter
-	Supported             []string
+	Parameters      []Parameter
+	Supported       []string
 }
 
 func (p MetaInfo) String() string {

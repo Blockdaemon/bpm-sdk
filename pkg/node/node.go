@@ -6,13 +6,13 @@
 package node
 
 import (
-	"strings"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"path"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/Blockdaemon/bpm-sdk/internal/util"
 	homedir "github.com/mitchellh/go-homedir"
@@ -119,7 +119,7 @@ func (c Node) Save() error {
 }
 
 func New(nodeFile string) Node {
-	return Node{ nodeFile: nodeFile }
+	return Node{nodeFile: nodeFile}
 }
 
 // Load all the data for a particular node and creates all required directories
@@ -185,4 +185,3 @@ func Load(nodeFile string) (Node, error) {
 
 	return node, nil
 }
-
