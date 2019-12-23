@@ -150,6 +150,9 @@ func Load(nodeFile string) (Node, error) {
 		return node, err
 	}
 
+	// Initialize temporary data store
+	node.Data = make(map[string]interface{})
+
 	// Load secrets
 	node.Secrets = make(map[string]interface{})
 
