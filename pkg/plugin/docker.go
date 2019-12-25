@@ -146,7 +146,7 @@ func (d DockerPlugin) CreateConfigs(currentNode node.Node) error {
 	}
 	return template.ConfigFilesRendered(d.configFilesAndTemplates, template.TemplateData{
 		Node: currentNode,
-		Data: map[string]interface{}{
+		PluginData: map[string]interface{}{
 			"Containers": d.containers,
 		},
 	})
