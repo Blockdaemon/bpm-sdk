@@ -7,12 +7,11 @@ BPM is the Blockchain Package Manager by Blockdaemon. It allows easy and uniform
 BPM itself provides the framework, the actual deployment is performed by plugins. Plugins are just binaries that provide a common set of
 command line parameters (see [Plugin Lifecycle](#plugin-lifecycle))
 
-While it is possible to write plugins without an SDK, it is
-recommended and significantly easier to use the provided go SDK.
+While it is possible to write plugins without an SDK, it is recommended and significantly easier to use the provided go SDK.
 
 ## Plugin Lifecycle
 
-Each plugin is a binary file that provides certain command line parameters. The different ways of invoking the plugin binary using command line parameters form the plugin lifecycle.
+Each plugin is a binary file that provides certain command line parameters. The different ways of invoking the plugin binary using command line parameters form the plugin lifecycle. Please note that an end-user never has to deal with the plugin command line parameters directly. Instead they will use the `bpm-cli` which internally calls the plugin via cli parameters.
 
 As a general rule each plugin command tries to be idempotent:
 
@@ -26,60 +25,104 @@ This is typically implemented by first checking if an action has already been ap
 
 The SDK provides a lot of helper functions to achieve this without overhead.
 
-### Creation of a new node
+### Example: Starting a new node
 
-Whenever a user runs: `bpm run <plugin>`, bpm internally calls the plugin with the following parameters:
+Whenever a user runs: `bpm configure <plugin> [--network|--network-type|--subtype|--protocol|...]`, the `bpm-cli` does the following:
 
-	plugin-binary create-secrets <node-id>
+1. Checks if the plugin is up-to-date. If there is a newer version, it recommends to install it
+2. Generates a random node id 
+3. Writes plugin details and high level configuration to `~/.bpm/nodes/<node-id>/node.json`
+4. Calls `plugin-binary create-secrets <node-id>`. This creates all secrets necessary for a node. This usually is a single node private key in `~/.bpm/nodes/<node-id>/secrets/`.
+5. Calls `plugin-binary create-configurations <node-id>`. This creates all the necessary configuration files in `~/.bpm/nodes/<node-id>/configs`. Please not that some of these configuration files may contain secrets that were previously created using `create-secrets`. The configuration from `~/.bpm/nodes/<node-id>/node.json` is typically used to customize the protocol configuration files. For example if the user specifies `--subtype=validator`, this information shows up in the `node.json` and can be used to generate a protocol configuration specifically tailored for validators.
 
-The `create-secrets` command is invoked first. It creates all secrets necessary for a node. This usually is a single node private key in `~/.blockdaemon/nodes/<node-id>/secrets/`.
+At this stage, the user has the ability to manually edit the protocol configuration in `~/.bpm/nodes/<node-id>/configs` if special configuration is needed.
 
-	plugin-binary create-configurations <node-id>
+Next the user can run `bpm start <node-id>` which internally calls `plugin-binary start <node-id>` to start the blockchain
 
-`create-configurations` creates all the necessary configuration files in `~/.blockdaemon/nodes/<node-id>/configs`. Please not that some of these configuration files may contain secrets that were previously created using `create-secrets`.
+There are similar commands for stopping, removing, etc. the node. Refer to the `bpm-cli` documentation for a full list.
 
-	plugin-binary start <node-id>
+### Lifecycle reference
 
-Starts the node. The current version of bpm supports docker so this will start one or more docker containers.
+**create-configurations**
 
-	plugin-binary version
+Creates the configuration files. This is typically done by applying the contents of `node.json` to templates. This allows for different configuration depending on e.g. the `subtype`.
 
-The last step is to get the version of the plugin. `bpm` will write this version to `~/.blockdaemon/nodes/<node-id>/version`. This version can be used when doing an upgrade to know which migrations to run.
+The plugin should write user friendly log messages to stdout and return with exit code 0 on success. On error it should write the error message to stderr and exit with a code other than 0.
 
-### Removal of a node
+**create-secrets**
 
-Whenever a user runs: `bpm stop <plugin>`, bpm internally calls the plugin with the following parameters:
+Creates the secrets for a blockchain node and stores them on disk.
 
-	plugin-binary stop <node-id>
+The plugin should write user friendly log messages to stdout and return with exit code 0 on success. On error it should write the error message to stderr and exit with a code other than 0.
 
-This will stop all node processes and remove all active resources like docker containers. It will not remove any data or configuration. To achieve this, the user
-needs to run `bpm stop <plugin> --purge`. The `--purge` parameter will be passed through to the plugin like this:
+**parameters**
 
-	plugin-binary stop <node-id> --purge
+Returns all valid values for the parameters used during the `bpm configure <plugin>` call. The values are returned in yaml format. The first value is always used as the default (even if there is only one value).
 
-In this case the assumption is that the plugin also removes data and configuration files. It should not remove any secrets. The reason is that everything else can be re-created but secrets cannot.
+Example:
 
-### Status
+	$ polkadot parameters
+	network:
+	- alexander
+	protocol:
+	- polkadot
+	subtype:
+	- watcher
+	- validator
+	networktype:
+	- public
 
-Whenever a user runs: `bpm status`, bpm internally calls the plugin with the following parameters:
+The above example shows a polkadot plugin that supports the `watcher` and `validator` nodes on the `alexander` testnet. This will get expanded with more networks (e.g. `mainnet`) once they become available. This particular plugin supports only `polkadot` as a `protocol` and `public` as `networktype`.
 
-	plugin-binary status <node-id>
+The plugin should always exit out of this command with an exit code of 0.
 
-This will return either:
+**remove-config**
+
+Removes all previously generated configurations.
+
+The plugin should write user friendly log messages to stdout and return with exit code 0 on success. On error it should write the error message to stderr and exit with a code other than 0.
+
+**remove-data**
+
+Removes all node specific data (e.g. the blockchain itself) but not configuration. This can be useful to "reset" the node.
+
+The plugin should write user friendly log messages to stdout and return with exit code 0 on success. On error it should write the error message to stderr and exit with a code other than 0.
+
+**remove-node**
+
+Removes the node itself. Depending on the target platform this can mean different things. If the plugin uses Docker it means removing the docker containers and networks
+
+The plugin should write user friendly log messages to stdout and return with exit code 0 on success. On error it should write the error message to stderr and exit with a code other than 0.
+
+**status**
+
+Writes the status of the node to stdout. This can be one of:
 
 - `running` if the node is currently running
 - `stopped` if the node is currently stopped
 - `incomplete` if parts of the node (e.g. only some containers) are running
 
-### Upgrade
+The plugin should return with exit code 0 on success. On error it should write the error message to stderr and exit with a code other than 0.
 
-Whenever a user runs: `bpm upgrade <plugin>`, bpm internally calls the plugin with the following parameters:
+**stop**
 
-	plugin-binary upgrade <node-id>
+Stops the node so that it can later be started again. Behaviour depends on the target platform.
 
-This will take all the necessary actions to upgrade a node. This could include stopping/restarting containers, running database migrations, re-creating configuration, etc.
+The plugin should write user friendly log messages to stdout and return with exit code 0 on success. On error it should write the error message to stderr and exit with a code other than 0.
 
-After the upgrade `bpm` will write the current plugin version to `~/.blockdaemon/nodes/<node-id>/version`. This version can be used when doing another upgrade to know which migrations to run.
+**test**
+
+Runs tests against the running node and reports the results on stdout. If at least one test failed it must return an exit code that is **not 0**.
+
+**upgrade**
+
+Upgrades an existing node to the current version of the plugin. This typically means stopping and restarting with a new version of the protocol. Sometimes other maintenance tasks need to be performed as well (.e.g database migrations).
+
+The plugin should write user friendly log messages to stdout and return with exit code 0 on success. On error it should write the error message to stderr and exit with a code other than 0.
+
+**version**
+
+Writes the semantic version string of the plugin to stdout. Should always exit with exit code 0.
 
 ## Plugin SDK
 
@@ -87,123 +130,122 @@ After the upgrade `bpm` will write the current plugin version to `~/.blockdaemon
 
 Package docker provides a simple docker abstraction layer that makes it very easy to start and remove docker containers, networks and volumes.
 
-For more information please refer to the [API documentation](./docs/docker.md).
+For more information please refer to the [API documentation](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/docker).
 
 ### node
 
 Package node provides an easy way to access node related information.
 
-For more information please refer to the [API documentation](./docs/node.md).
+For more information please refer to the [API documentation](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/node).
 
 ### template
 
 Package template implements functions to render Go templates to files using the node.Node struct as an imnput for the templates.
 
-For more information please refer to the [API documentation](./docs/template.md).
+For more information please refer to the [API documentation](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/template).
 
 ### plugin
 
 Package plugin provides an easy way to create the required CLI for a plugin. It abstracts away all the command line and file parsing so users just need to implement the actual logic. 
 
-For more information please refer to [Implementing a plugin using the Go SDL](#implementing-a-plugin-using-the-go-sdk) and the [API documentation](./docs/plugin.md).
+For more information please refer to [Implementing a plugin using the Go SDL](#implementing-a-docker-based-plugin-using-the-go-sdk) and the [API documentation](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/plugin).
 
-## Implementing a plugin using the Go SDK
+## Implementing a Docker based plugin using the Go SDK
 
-The easiest way to get started is to copy the example below and start implementing the individual functions. Have a look at existing plugins for inspiration.
+The easiest way to get started is to copy the example below and start changing the containers and settings.
 
-### Example with defaults
+### Example
 
 ```go
 package main
 
 import (
-	"fmt"
-
+	"github.com/Blockdaemon/bpm-sdk/pkg/docker"
 	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 	"github.com/Blockdaemon/bpm-sdk/pkg/plugin"
 )
 
 var version string
 
-func start(currentNode node.Node) error {
-	fmt.Println("Nothing to do here, skipping start")
-	return nil
-}
+const (
+	polkadotContainerImage = "docker.io/chevdor/polkadot:0.4.4"
+	polkadotContainerName  = "polkadot"
+	polkadotDataVolumeName = "polkadot-data"
+	polkadotCmdFile        = "polkadot.dockercmd"
 
-func status(currentNode node.Node) (string, error) {
-	return "stopped", nil
-}
+	networkName = "polkadot"
 
-func main() {
-	plugin.Initialize(plugin.Plugin{
-		Name: "empty",
-		Description: "A plugin that does nothing",
-		Version: version,
-		Start: start,
-		Status: status,
-		CreateSecrets: plugin.DefaultCreateSecrets,
-		CreateConfigs: plugin.DefaultCreateConfigs
-		Stop: plugin.DefaultStop,
-		Upgrade: plugin.DefaultUpgrade,
-	})
-}
-```
-
-### Full Example
-
-```go
-package main
-
-import (
-	"fmt"
-
-	"github.com/Blockdaemon/bpm-sdk/pkg/node"
-	"github.com/Blockdaemon/bpm-sdk/pkg/plugin"
+	polkadotCmdTpl = `polkadot
+--base-path
+/data
+--rpc-external
+--name
+{{ .Node.ID }}
+--chain
+{{ .Node.Environment }}
+{{ if eq .Node.Subtype "validator" }}
+--validator
+--key {% ADD NODE KEY HERE %}
+{{ end }}
+`
 )
 
-var version string
-
-func createSecrets(currentNode node.Node) error {
-	fmt.Println("Nothing to do here, skipping create-secrets")
-	return nil
-}
-
-func createConfigs(currentNode node.Node) error {
-	fmt.Println("Nothing to do here, skipping create-configurations")
-	return nil
-}
-
-func start(currentNode node.Node) error {
-	fmt.Println("Nothing to do here, skipping start")
-	return nil
-}
-
-func status(currentNode node.Node) (string, error) {
-	return "stopped", nil
-}
-
-func stop(currentNode node.Node, purge bool) error {
-	fmt.Println("Nothing to do here, skipping remove")
-	return nil
-}
-
-func upgrade(currentNode node.Node) error {
-	fmt.Println("Nothing to do here, skipping upgrade")
-	return nil
-}
-
 func main() {
-	plugin.Initialize(plugin.Plugin{
-		Name: "empty",
-		Description: "A plugin that does nothing",
-		Version: version,
-		Start: start,
-		Status: status,
-		CreateSecrets: createSecrets,
-		CreateConfigs: createConfigs,
-		Stop: stop,
-		Upgrade: upgrade,
-	})
+	// Define the container that runs the blockchain
+	containers := []docker.Container{
+		{
+			Name:      polkadotContainerName,
+			Image:     polkadotContainerImage,
+			CmdFile:   polkadotCmdFile,
+			NetworkID: networkName,
+			Mounts: []docker.Mount{
+				{
+					Type: "volume",
+					From: polkadotDataVolumeName,
+					To:   "/data",
+				},
+			},
+			Ports: []docker.Port{
+				{
+					HostIP:        "0.0.0.0",
+					HostPort:      "30333",
+					ContainerPort: "30333",
+					Protocol:      "tcp",
+				},
+				{
+					HostIP:        "127.0.0.1",
+					HostPort:      "9933",
+					ContainerPort: "9933",
+					Protocol:      "tcp",
+				},
+			},
+			CollectLogs: true,
+		},
+	}
+
+	// Define the allowed parameters
+	parameters := plugin.Parameters{
+		Network:     []string{"alexander"},
+		Protocol:    []string{"polkadot"},
+		Subtype:     []string{"watcher", "validator"},
+		NetworkType: []string{"public"},
+	}
+
+	// Define templates
+	templates := map[string]string{
+		polkadotCmdFile: polkadotCmdTpl,
+	}
+
+	// Initialize the plugin
+	dockerPlugin := plugin.NewDockerPlugin(
+		"polkadot",
+		"A polkadot plugin",
+		version,
+		containers,
+		templates,
+		parameters,
+	)
+	plugin.Initialize(dockerPlugin)
 }
 ```
 

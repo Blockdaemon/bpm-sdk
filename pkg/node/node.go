@@ -9,40 +9,39 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
+	"path/filepath"
+	"strings"
 
 	"github.com/Blockdaemon/bpm-sdk/internal/util"
- 	homedir "github.com/mitchellh/go-homedir"
+	homedir "github.com/mitchellh/go-homedir"
 )
 
 // Node represents a blockchain node, it's configuration and related information
 type Node struct {
-	baseDir string
+	nodeFile string
 
 	// The global ID of this node
 	ID string `json:"id"`
 
-	// Which blockchain network to connect to (Example: mainnet, ropsten, ...)
-	Environment string `json:"environment"`
+	// The plugin name
+	PluginName string `json:"plugin"`
 
-	// Describes the type of this blockchain network (Examples: public, private)
-	NetworkType string `json:"networkType"`
+	// Dynamic (i.e. defined by the plugin) string parameters
+	StrParameters map[string]string `json:"str_parameters"`
 
-	// Describes the protocol of this node (Examples: bitcoin, ethereum, polkadot, ...)
-	Protocol string `json:"protocol"`
-
-	// Describes the specific type of this node (Examples: validator, watcher, ...)
-	Subtype string `json:"subtype"`
-	// Describes the protocol of this node (Examples: bitcoin, ethereum, polkadot, ...)
+	// Dynamic bool parameters
+	BoolParameters map[string]bool `json:"bool_parameters"`
 
 	// Describes the collection configuration
 	Collection Collection `json:"collection"`
 
-	// Specific configuration settings for this node
-	Config map[string]interface{} `json:"config"`
-
 	// Secrets (Example: Private keys)
 	Secrets map[string]interface{} `json:"-"` // No json here, never serialize secrets!
+
+	// Holding place for data that is generated at runtime. E.g. can be used to store data parsed from the parameters
+	Data map[string]interface{} `json:"-"` // No json here, runtime data only
 
 	// The package version used to install this node (if installed yet)
 	// This is useful to know in order to run migrations on upgrades.
@@ -57,39 +56,31 @@ type Collection struct {
 	Key  string `json:"key"`
 }
 
-// DockerPrefix returns the prefix used as a convention when naming containers, volumes and networks
-func (c Node) DockerPrefix() string {
-	return fmt.Sprintf("bd-%s", c.ID)
-}
-
-// DockerNetworkName returns the recommended name for a docker network in which this node runs
-func (c Node) DockerNetworkName() string {
-	return c.DockerPrefix()
-}
-
-// ContainerName takes a simple name for a docker container and returns it formatted according to package conventions
-func (c Node) ContainerName(containerName string) string {
-	return c.DockerPrefix() + "-" + containerName
-}
-
-// VolumeName converts a name for a docker volume and returns it formatted according to package conventions
-func (c Node) VolumeName(volumeName string) string {
-	return c.DockerPrefix() + "-" + volumeName
+// NamePrefix returns the prefix used as a convention when naming containers, volumes, networks, etc.
+func (c Node) NamePrefix() string {
+	return fmt.Sprintf("bpm-%s-", c.ID)
 }
 
 // NodeDirectory returns the base directory under which all configuration, secrets and meta-data for this node is stored
 func (c Node) NodeDirectory() string {
-	expandedBaseDir, err := homedir.Expand(c.baseDir)
+	dir := filepath.Dir(c.nodeFile)
+
+	absDir, err := filepath.Abs(dir)
 	if err != nil {
-		panic(err) // Should never happen because, at this stage, the directory should already be created
+		panic(err) // Should never happen
 	}
 
-	return path.Join(expandedBaseDir, c.ID)
+	expandedBaseDir, err := homedir.Expand(absDir)
+	if err != nil {
+		panic(err) // Should never happen
+	}
+
+	return expandedBaseDir
 }
 
 // NodeFile returns the filepath in which the base configuration as well as meta-data from the PBG is stored
 func (c Node) NodeFile() string {
-	return path.Join(c.NodeDirectory(), "node.json")
+	return c.nodeFile
 }
 
 // ConfigsDirectorys returns the directory under which all configuration for the blockchain client is stored
@@ -102,26 +93,41 @@ func (c Node) SecretsDirectory() string {
 	return path.Join(c.NodeDirectory(), "secrets")
 }
 
-// Load all the data for a particular node and creates all required directories
-func Load(baseDir, id string) (Node, error) {
-	node := Node{
-		baseDir: baseDir,
-		ID:      id,
-	}
-
+// Save the node data
+func (c Node) Save() error {
 	// Create node directories if they don't exist yet
-	_, err := util.MakeDirectory(node.SecretsDirectory())
+	_, err := util.MakeDirectory(c.SecretsDirectory())
 	if err != nil {
-		return node, err
+		return err
 	}
 
-	_, err = util.MakeDirectory(node.ConfigsDirectory())
+	_, err = util.MakeDirectory(c.ConfigsDirectory())
 	if err != nil {
-		return node, err
+		return err
 	}
+
+	data, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(
+		c.NodeFile(),
+		data,
+		os.ModePerm,
+	)
+}
+
+func New(nodeFile string) Node {
+	return Node{nodeFile: nodeFile}
+}
+
+// Load all the data for a particular node and creates all required directories
+func Load(nodeFile string) (Node, error) {
+	node := New(nodeFile)
 
 	// Load node data
-	nodeData, err := ioutil.ReadFile(node.NodeFile())
+	nodeData, err := ioutil.ReadFile(nodeFile)
 	if err != nil {
 		return node, err
 	}
@@ -129,6 +135,23 @@ func Load(baseDir, id string) (Node, error) {
 	if err = json.Unmarshal(nodeData, &node); err != nil {
 		return node, err
 	}
+
+	// TODO: Using directories here as a shortcut. Not every plugin will use directories.
+	//       E.g. if a plugin runs on k8s it might create k8s secrets.
+	//       We will neeed to refactor this at some point!
+
+	// Create node directories if they don't exist yet
+	_, err = util.MakeDirectory(node.SecretsDirectory())
+	if err != nil {
+		return node, err
+	}
+	_, err = util.MakeDirectory(node.ConfigsDirectory())
+	if err != nil {
+		return node, err
+	}
+
+	// Initialize temporary data store
+	node.Data = make(map[string]interface{})
 
 	// Load secrets
 	node.Secrets = make(map[string]interface{})
@@ -145,7 +168,18 @@ func Load(baseDir, id string) (Node, error) {
 				return node, err
 			}
 
-			node.Secrets[f.Name()] = string(secret)
+			// as a convenience we parse json here so that individual elements
+			// can be referenced when rendering templates
+			if strings.HasSuffix(f.Name(), ".json") {
+				var data interface{}
+				if err := json.Unmarshal(secret, &data); err != nil {
+					return node, err
+				}
+
+				node.Secrets[f.Name()] = data
+			} else {
+				node.Secrets[f.Name()] = string(secret)
+			}
 		}
 	}
 

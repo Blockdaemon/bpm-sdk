@@ -36,63 +36,58 @@
 package plugin
 
 import (
-	"context"
 	"fmt"
 	"os"
 
-	"io/ioutil"
-	"strings"
-	"time"
-
-	"github.com/Blockdaemon/bpm-sdk/pkg/docker"
 	"github.com/Blockdaemon/bpm-sdk/pkg/node"
-	"github.com/Blockdaemon/bpm-sdk/pkg/template"
 	"github.com/spf13/cobra"
+	"github.com/thoas/go-funk"
 )
 
 // Plugin describes and provides the functionality for a plugin
-type Plugin struct {
-	// The name of the plugin
-	Name string
-	// A short one-line description of the plugin
-	Description string
-	// The semantic version of the plugin. Please increment with every change to the plugin
-	Version string
+type Plugin interface {
+	// Returns the name of the plugin
+	Name() string
 	// Function that creates the secrets for a node
-	CreateSecrets func(currentNode node.Node) error
+	CreateSecrets(currentNode node.Node) error
 	// Function that creates the configuration for the blockchain client
-	CreateConfigs func(currentNode node.Node) error
-	// Function to start the node. This usually involves creating a Docker network and starting containers
-	Start func(currentNode node.Node) error
-	// Function to stop a running node. This usually involves removing Docker containers
-	Stop func(currentNode node.Node, purge bool) error
+	CreateConfigs(currentNode node.Node) error
+	// Function to start the node
+	Start(currentNode node.Node) error
+	// Function to stop a running node
+	Stop(currentNode node.Node) error
 	// Function to return the status (running, incomplete, stopped) of a  node
-	Status func(currentNode node.Node) (string, error)
+	Status(currentNode node.Node) (string, error)
 	// Function to upgrade a node with a new plugin version
-	Upgrade func(currentNode node.Node) error
+	Upgrade(currentNode node.Node) error
+	// Function to run tests against the node
+	Test(currentNode node.Node) (bool, error)
+	// Removes any data (typically the blockchain itself) related to the node
+	RemoveData(currentNode node.Node) error
+	// Removes configuration related to the node
+	RemoveConfig(currentNode node.Node) error
+	// Removes everything other than data and configuration related to the node
+	RemoveRuntime(currentNode node.Node) error
+	// Return plugin meta information such as: What's supported, possible parameters
+	Meta() MetaInfo
 }
 
 // Initialize creates the CLI for a plugin
 func Initialize(plugin Plugin) {
-	var baseDir string
-	var purge bool
-
 	// Initialize root command
 	var rootCmd = &cobra.Command{
-		Use:   plugin.Name,
-		Short: plugin.Description,
+		Use:          plugin.Name(),
+		Short:        plugin.Meta().Description,
+		SilenceUsage: true,
 	}
-
-	pf := rootCmd.PersistentFlags()
-	pf.StringVar(&baseDir, "base-dir", "~/.bpm/nodes", "The directory in which the node secrets and configuration are stored")
 
 	// Create the commands
 	var createSecretsCmd = &cobra.Command{
-		Use:   "create-secrets <node-id>",
+		Use:   "create-secrets <node-file>",
 		Short: "Creates the secrets for a blockchain node and stores them on disk",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.Load(baseDir, args[0])
+			currentNode, err := node.Load(args[0])
 
 			if err != nil {
 				return err
@@ -103,11 +98,11 @@ func Initialize(plugin Plugin) {
 	}
 
 	var createConfigurationsCmd = &cobra.Command{
-		Use:   "create-configurations <node-id>",
+		Use:   "create-configurations <node-file>",
 		Short: "Creates the configurations for a blockchain node and stores them on disk",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.Load(baseDir, args[0])
+			currentNode, err := node.Load(args[0])
 			if err != nil {
 				return err
 			}
@@ -117,11 +112,11 @@ func Initialize(plugin Plugin) {
 	}
 
 	var startCmd = &cobra.Command{
-		Use:   "start <node-id>",
+		Use:   "start <node-file>",
 		Short: "Starts the docker containers",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.Load(baseDir, args[0])
+			currentNode, err := node.Load(args[0])
 			if err != nil {
 				return err
 			}
@@ -131,26 +126,25 @@ func Initialize(plugin Plugin) {
 	}
 
 	var stopCmd = &cobra.Command{
-		Use:   "stop <node-id>",
+		Use:   "stop <node-file>",
 		Short: "Stops the docker containers",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.Load(baseDir, args[0])
+			currentNode, err := node.Load(args[0])
 			if err != nil {
 				return err
 			}
 
-			return plugin.Stop(currentNode, purge)
+			return plugin.Stop(currentNode)
 		},
 	}
-	stopCmd.Flags().BoolVar(&purge, "purge", false, "Purge all data volumes and configuration files")
 
 	var upgradeCmd = &cobra.Command{
-		Use:   "upgrade <node-id>",
+		Use:   "upgrade <node-file>",
 		Short: "Removes the docker containers",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.Load(baseDir, args[0])
+			currentNode, err := node.Load(args[0])
 			if err != nil {
 				return err
 			}
@@ -160,11 +154,11 @@ func Initialize(plugin Plugin) {
 	}
 
 	var statusCmd = &cobra.Command{
-		Use:   "status <node-id>",
+		Use:   "status <node-file>",
 		Short: "Gives information about the current status",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.Load(baseDir, args[0])
+			currentNode, err := node.Load(args[0])
 			if err != nil {
 				return err
 			}
@@ -179,11 +173,53 @@ func Initialize(plugin Plugin) {
 		},
 	}
 
-	var versionCmd = &cobra.Command{
-		Use:   "version",
-		Short: "Print the version of this plugin",
+	var metaInfoCmd = &cobra.Command{
+		Use:   "meta",
+		Short: "Shows meta information such as allowed parameters for this plugin",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println(plugin.Version)
+			fmt.Println(plugin.Meta())
+		},
+	}
+
+	var removeConfigCmd = &cobra.Command{
+		Use:   "remove-config <node-file>",
+		Short: "Remove the node configuration files",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			currentNode, err := node.Load(args[0])
+			if err != nil {
+				return err
+			}
+
+			return plugin.RemoveConfig(currentNode)
+		},
+	}
+
+	var removeDataCmd = &cobra.Command{
+		Use:   "remove-data <node-file>",
+		Short: "Remove the node data",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			currentNode, err := node.Load(args[0])
+			if err != nil {
+				return err
+			}
+
+			return plugin.RemoveData(currentNode)
+		},
+	}
+
+	var removeRuntimeCmd = &cobra.Command{
+		Use:   "remove-runtime <node-file>",
+		Short: "Remove everything related to the node itself but no data or configs",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			currentNode, err := node.Load(args[0])
+			if err != nil {
+				return err
+			}
+
+			return plugin.RemoveRuntime(currentNode)
 		},
 	}
 
@@ -194,94 +230,42 @@ func Initialize(plugin Plugin) {
 		statusCmd,
 		stopCmd,
 		upgradeCmd,
-		versionCmd,
+		metaInfoCmd,
+		removeConfigCmd,
+		removeDataCmd,
+		removeRuntimeCmd,
 	)
 
-	// Start it all
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
-
-// DefaultStop removes all configuration files and containers, volumes, network based on naming conventions
-//
-// Container names and volume names for a particular node all start with "bd-<node-id>".
-func DefaultStop(currentNode node.Node, purge bool) error {
-	client, err := docker.NewBasicManager()
-	if err != nil {
-		return err
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	defer cancel()
-
-	// Remove containers
-	containerNames, err := client.ListContainerNames(ctx)
-	if err != nil {
-		return err
-	}
-
-	for _, containerName := range containerNames {
-		if strings.HasPrefix(containerName, currentNode.DockerPrefix()) {
-			if err = client.ContainerAbsent(ctx, containerName); err != nil {
-				return err
-			}
-
-		}
-	}
-
-	// Remove network
-	if err = client.NetworkAbsent(ctx, currentNode.DockerNetworkName()); err != nil {
-		return err
-	}
-
-	if purge {
-		// Remove volumes
-		volumeNames, err := client.ListVolumeIDs(ctx)
-		if err != nil {
-			return err
-		}
-
-		for _, volumeName := range volumeNames {
-			if strings.HasPrefix(volumeName, currentNode.DockerPrefix()) {
-				if err = client.VolumeAbsent(ctx, volumeName); err != nil {
+	if funk.Contains(plugin.Meta().Supported, SupportsTest) {
+		var testCmd = &cobra.Command{
+			Use:   "test <node-file>",
+			Short: "Runs a test suite against the running node",
+			Args:  cobra.MinimumNArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				currentNode, err := node.Load(args[0])
+				if err != nil {
 					return err
 				}
 
-			}
+				success, err := plugin.Test(currentNode)
+
+				if err != nil {
+					return err
+				}
+
+				if !success {
+					return fmt.Errorf("tests failed") // this causes a non-zero exit code
+				}
+
+				return nil
+			},
 		}
 
-		// Remove all configuration files
-		dir, err := ioutil.ReadDir(currentNode.ConfigsDirectory())
-		if err != nil {
-			return err
-		}
-
-		for _, d := range dir {
-			if err := template.ConfigFileAbsent(d.Name(), currentNode); err != nil {
-				return err
-			}
-		}
+		rootCmd.AddCommand(testCmd)
 	}
 
-	return nil
-}
-
-// DefaultCreateSecrets does nothing except printing that it does nothing
-func DefaultCreateSecrets(currentNode node.Node) error {
-	fmt.Println("Nothing to do here, skipping create-secrets")
-	return nil
-}
-
-// DefaultCreateConfigs does nothing except printing that it does nothing
-func DefaultCreateConfigs(currentNode node.Node) error {
-	fmt.Println("Nothing to do here, skipping create-configurations")
-	return nil
-}
-
-// DefaultUpgrade does nothing except printing that it does nothing
-func DefaultUpgrade(currentNode node.Node) error {
-	fmt.Println("Nothing to do here, skipping upgrade")
-	return nil
+	// Start it all
+	if err := rootCmd.Execute(); err != nil {
+		os.Exit(1)
+	}
 }

@@ -11,5 +11,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/spf13/cobra v0.0.5
+	github.com/thoas/go-funk v0.5.0
 	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 // indirect
+	gopkg.in/yaml.v2 v2.2.2
 )
