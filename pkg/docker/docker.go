@@ -290,6 +290,75 @@ func (bm *BasicManager) ContainerRuns(ctx context.Context, container Container) 
 	return nil
 }
 
+
+// RunTransientContainer runs a container once and removes it after it is finished.
+func (bm *BasicManager) RunTransientContainer(ctx context.Context, container Container) (string, error) {
+	// See: https://docs.docker.com/develop/sdk/examples/
+
+	if err := bm.pullImage(ctx, container.Image); err != nil {
+		return "", err
+	}
+
+	exists, err := bm.doesContainerExist(ctx, container.Name)
+	if err != nil {
+		return "", err
+	}
+
+	prefixedName := bm.prefixedName(container.Name)
+
+	if !exists {
+		fmt.Printf("Creating container '%s'\n", prefixedName)
+
+		if err := bm.createContainer(ctx, container); err != nil {
+			return "", err
+		}
+	} else {
+		fmt.Printf("Container '%s' already exists, skipping creation\n", prefixedName)
+	}
+
+	running, err := bm.IsContainerRunning(ctx, container.Name)
+	if err != nil {
+		return "", err
+	}
+	if !running {
+		fmt.Printf("Starting container '%s'\n", prefixedName)
+
+		if err := bm.cli.ContainerStart(ctx, prefixedName, types.ContainerStartOptions{}); err != nil {
+			return "", err
+		}
+	} else {
+		fmt.Printf("Container '%s' already runs, skipping start\n", prefixedName)
+	}
+
+	status, err := bm.cli.ContainerWait(ctx, prefixedName)
+	if err != nil {
+		return "", err
+	}
+
+	// Get stdout and stderr
+	outReader, err := bm.cli.ContainerLogs(ctx, prefixedName, types.ContainerLogsOptions{ShowStdout: true, ShowStderr: true})
+	if err != nil {
+		return "", err
+	}
+	defer outReader.Close()
+	output, err := ioutil.ReadAll(outReader)
+	outputStr := string(output)
+	if err != nil {
+		return outputStr, err
+	}
+
+	if status != 0 {
+		return outputStr, fmt.Errorf("Container '%s' failed with status code: %d", prefixedName, status)
+	}
+
+	// Removing the container after it's done
+	if err := bm.ContainerAbsent(ctx, container.Name, container.NetworkID); err != nil {
+		return outputStr, err
+	}
+
+	return outputStr, nil
+}
+
 func (bm *BasicManager) doesContainerExist(ctx context.Context, containerName string) (bool, error) {
 	_, err := bm.cli.ContainerInspect(ctx, bm.prefixedName(containerName))
 	if err != nil {
