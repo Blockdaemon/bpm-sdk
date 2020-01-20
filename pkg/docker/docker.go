@@ -438,12 +438,15 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 
 	// Ports
 	portBindings := make(map[nat.Port][]nat.PortBinding)
+	exposedPorts := make(nat.PortSet)
 
 	for _, portParameter := range container.Ports {
 		containerPort, err := nat.NewPort(portParameter.Protocol, portParameter.ContainerPort)
 		if err != nil {
 			return err
 		}
+
+		exposedPorts[containerPort] = struct{}{}
 
 		portBindings[containerPort] = []nat.PortBinding{
 			{
@@ -515,10 +518,11 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 
 	// Container config
 	containerCfg := &dockercontainer.Config{
-		Image: container.Image,
-		Env:   envs,
-		Cmd:   cmd,
-		User:  container.User,
+		Image:        container.Image,
+		Env:          envs,
+		Cmd:          cmd,
+		User:         container.User,
+		ExposedPorts: exposedPorts,
 	}
 
 	// Create a container with configs
