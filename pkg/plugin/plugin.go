@@ -44,32 +44,86 @@ import (
 	"github.com/thoas/go-funk"
 )
 
+// Configurator is the interface that wraps the Configure method
+type Configurator interface {
+	// Function that creates the secrets for a node
+	CreateSecrets(currentNode node.Node) error
+
+	// Function that creates the configuration for the node
+	Configure(currentNode node.Node) error
+
+	// Removes configuration related to the node
+	RemoveConfig(currentNode node.Node) error
+}
+
+// LifecycleHandler provides functions to manage a node
+type LifecycleHandler interface {
+	// Function to start a node
+	Start(currentNode node.Node) error
+	// Function to stop a running node
+	Stop(currentNode node.Node) error
+	// Function to return the status (running, incomplete, stopped) of a node
+	Status(currentNode node.Node) (string, error)
+	// Removes any data (typically the blockchain itself) related to the node
+	RemoveData(currentNode node.Node) error
+	// Removes everything other than data and configuration related to the node
+	RemoveRuntime(currentNode node.Node) error
+}
+
+// Upgrader is the interface that wraps the Upgrade method
+type Upgrader interface {
+	// Function to upgrade a node with a new plugin version
+	Upgrade(currentNode node.Node) error
+}
+
+// Tester is the interface that wraps the Test method
+type Tester interface {
+	// Function to test a node
+	Test(currentNode node.Node) (bool, error)
+}
+
 // Plugin describes and provides the functionality for a plugin
 type Plugin interface {
 	// Returns the name of the plugin
 	Name() string
-	// Function that creates the secrets for a node
-	CreateSecrets(currentNode node.Node) error
-	// Function that creates the configuration for the blockchain client
-	CreateConfigs(currentNode node.Node) error
-	// Function to start the node
-	Start(currentNode node.Node) error
-	// Function to stop a running node
-	Stop(currentNode node.Node) error
-	// Function to return the status (running, incomplete, stopped) of a  node
-	Status(currentNode node.Node) (string, error)
-	// Function to upgrade a node with a new plugin version
-	Upgrade(currentNode node.Node) error
-	// Function to run tests against the node
-	Test(currentNode node.Node) (bool, error)
-	// Removes any data (typically the blockchain itself) related to the node
-	RemoveData(currentNode node.Node) error
-	// Removes configuration related to the node
-	RemoveConfig(currentNode node.Node) error
-	// Removes everything other than data and configuration related to the node
-	RemoveRuntime(currentNode node.Node) error
 	// Return plugin meta information such as: What's supported, possible parameters
 	Meta() MetaInfo
+
+	Configurator
+	LifecycleHandler
+	Upgrader
+	Tester
+}
+
+type PluginImpl struct {
+	Configurator
+	LifecycleHandler
+	Upgrader
+	Tester
+
+	// Plugin meta information
+	meta MetaInfo
+
+	name string
+}
+
+func (d PluginImpl) Name() string {
+	return d.name
+}
+
+func (d PluginImpl) Meta() MetaInfo {
+	return d.meta
+}
+
+func NewPlugin(name string, meta MetaInfo, configurator Configurator, lifecycleHandler LifecycleHandler, upgrader Upgrader, tester Tester) Plugin {
+	return PluginImpl{
+		name:             name,
+		meta:             meta,
+		Configurator:     configurator,
+		LifecycleHandler: lifecycleHandler,
+		Upgrader:         upgrader,
+		Tester:           tester,
+	}
 }
 
 // Initialize creates the CLI for a plugin
@@ -107,7 +161,7 @@ func Initialize(plugin Plugin) {
 				return err
 			}
 
-			return plugin.CreateConfigs(currentNode)
+			return plugin.Configure(currentNode)
 		},
 	}
 

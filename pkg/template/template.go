@@ -13,9 +13,10 @@ import (
 	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 )
 
+// TemplateData wraps the data send to the rendering engine
 type TemplateData struct {
 	Node       node.Node
-	PluginData map[string]interface{} // This allows plugins to add additional data. E.g. a docker plugin can add container data
+	PluginData map[string]interface{}
 }
 
 // ConfigFileRendered renders a template with node confguration and writes it to disk if it doesn't exist yet
