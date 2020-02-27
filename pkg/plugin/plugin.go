@@ -2,37 +2,6 @@
 // It abstracts away all the command line and file parsing so users just need to implement the actual logic.
 //
 // Please see the main BPM-SDK documentation for more details on how to implement a new plugin.
-//
-// Usage Example:
-//
-//		package main
-//
-//		import (
-//			"github.com/Blockdaemon/bpm-sdk/pkg/plugin"
-//			"github.com/Blockdaemon/bpm-sdk/pkg/node"
-//
-//			"fmt"
-//		)
-//
-//		var pluginVersion string
-//
-//		func start(currentNode node.Node) error {
-//			fmt.Println("Nothing to do here, skipping start")
-//			return nil
-//		}
-//
-//		func main() {
-//			plugin.Initialize(plugin.Plugin{
-//				Name: "empty",
-//				Description: "A plugin that does nothing",
-//				Version: pluginVersion,
-//				Start: start,
-//				CreateSecrets: plugin.DefaultCreateSecrets,
-//				CreateConfigs: plugin.DefaultCreateConfigs
-//				Remove: plugin.DefaultRemove,
-//				Upgrade: plugin.DefaultUpgrade,
-//			})
-//		}
 package plugin
 
 import (

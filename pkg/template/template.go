@@ -69,8 +69,6 @@ func ConfigFileRendered(filename, templateContent string, templateData TemplateD
 }
 
 // ConfigFilesRendered renderes multiple templates to files
-//
-// Usage:
 func ConfigFilesRendered(filenamesAndTemplates map[string]string, templateData TemplateData) error {
 	for filename, template := range filenamesAndTemplates {
 		if err := ConfigFileRendered(filename, template, templateData); err != nil {
