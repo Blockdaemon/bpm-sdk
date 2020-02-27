@@ -12,9 +12,8 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
-	"github.com/Blockdaemon/bpm-sdk/internal/util"
+	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
@@ -37,9 +36,6 @@ type Node struct {
 	// Describes the collection configuration
 	Collection Collection `json:"collection"`
 
-	// Secrets (Example: Private keys)
-	Secrets map[string]interface{} `json:"-"` // No json here, never serialize secrets!
-
 	// Holding place for data that is generated at runtime. E.g. can be used to store data parsed from the parameters
 	Data map[string]interface{} `json:"-"` // No json here, runtime data only
 
@@ -61,7 +57,7 @@ func (c Node) NamePrefix() string {
 	return fmt.Sprintf("bpm-%s-", c.ID)
 }
 
-// NodeDirectory returns the base directory under which all configuration, secrets and meta-data for this node is stored
+// NodeDirectory returns the base directory under which all configuration and meta-data for this node is stored
 func (c Node) NodeDirectory() string {
 	dir := filepath.Dir(c.nodeFile)
 
@@ -88,20 +84,10 @@ func (c Node) ConfigsDirectory() string {
 	return path.Join(c.NodeDirectory(), "configs")
 }
 
-// ConfigsDirectorys returns the directory under which all secrets for the blockchain client is stored
-func (c Node) SecretsDirectory() string {
-	return path.Join(c.NodeDirectory(), "secrets")
-}
-
 // Save the node data
 func (c Node) Save() error {
 	// Create node directories if they don't exist yet
-	_, err := util.MakeDirectory(c.SecretsDirectory())
-	if err != nil {
-		return err
-	}
-
-	_, err = util.MakeDirectory(c.ConfigsDirectory())
+	_, err := fileutil.MakeDirectory(c.ConfigsDirectory())
 	if err != nil {
 		return err
 	}
@@ -136,52 +122,8 @@ func Load(nodeFile string) (Node, error) {
 		return node, err
 	}
 
-	// TODO: Using directories here as a shortcut. Not every plugin will use directories.
-	//       E.g. if a plugin runs on k8s it might create k8s secrets.
-	//       We will neeed to refactor this at some point!
-
-	// Create node directories if they don't exist yet
-	_, err = util.MakeDirectory(node.SecretsDirectory())
-	if err != nil {
-		return node, err
-	}
-	_, err = util.MakeDirectory(node.ConfigsDirectory())
-	if err != nil {
-		return node, err
-	}
-
 	// Initialize temporary data store
 	node.Data = make(map[string]interface{})
-
-	// Load secrets
-	node.Secrets = make(map[string]interface{})
-
-	files, err := ioutil.ReadDir(node.SecretsDirectory())
-	if err != nil {
-		return node, err
-	}
-
-	for _, f := range files {
-		if !f.IsDir() {
-			secret, err := ioutil.ReadFile(path.Join(node.SecretsDirectory(), f.Name()))
-			if err != nil {
-				return node, err
-			}
-
-			// as a convenience we parse json here so that individual elements
-			// can be referenced when rendering templates
-			if strings.HasSuffix(f.Name(), ".json") {
-				var data interface{}
-				if err := json.Unmarshal(secret, &data); err != nil {
-					return node, err
-				}
-
-				node.Secrets[f.Name()] = data
-			} else {
-				node.Secrets[f.Name()] = string(secret)
-			}
-		}
-	}
 
 	return node, nil
 }

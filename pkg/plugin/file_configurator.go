@@ -5,6 +5,7 @@ package plugin
 import (
 	"fmt"
 
+	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
 	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 	"github.com/Blockdaemon/bpm-sdk/pkg/template"
 )
@@ -15,20 +16,18 @@ type FileConfigurator struct {
 	pluginParameters        []Parameter
 }
 
-// CreateSecrets does nothing except printing that it does nothing
-func (d FileConfigurator) CreateSecrets(currentNode node.Node) error {
-	if err := d.ValidateParameters(currentNode); err != nil {
-		return err
-	}
-	fmt.Println("Nothing to do here, skipping create-secrets")
-	return nil
-}
-
 // Configure creates configuration files for the blockchain client
 func (d FileConfigurator) Configure(currentNode node.Node) error {
 	if err := d.ValidateParameters(currentNode); err != nil {
 		return err
 	}
+
+	// Create config directory if it doesn't exist yet
+	_, err := fileutil.MakeDirectory(currentNode.ConfigsDirectory())
+	if err != nil {
+		return err
+	}
+
 	return template.ConfigFilesRendered(d.configFilesAndTemplates, template.TemplateData{
 		Node: currentNode,
 	})

@@ -9,7 +9,7 @@ import (
 	"path"
 	"text/template"
 
-	"github.com/Blockdaemon/bpm-sdk/internal/util"
+	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
 	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 )
 
@@ -31,7 +31,7 @@ type TemplateData struct {
 func ConfigFileRendered(filename, templateContent string, templateData TemplateData) error {
 	outputFilename := path.Join(templateData.Node.ConfigsDirectory(), filename)
 
-	exists, err := util.FileExists(outputFilename)
+	exists, err := fileutil.FileExists(outputFilename)
 	if err != nil {
 		return err
 	}
@@ -84,7 +84,7 @@ func ConfigFilesRendered(filenamesAndTemplates map[string]string, templateData T
 func ConfigFileAbsent(filename string, node node.Node) error {
 	filePath := path.Join(node.ConfigsDirectory(), filename)
 
-	exists, err := util.FileExists(filePath)
+	exists, err := fileutil.FileExists(filePath)
 	if err != nil {
 		return err
 	}

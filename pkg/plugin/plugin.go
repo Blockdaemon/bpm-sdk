@@ -15,9 +15,6 @@ import (
 
 // Configurator is the interface that wraps the Configure method
 type Configurator interface {
-	// Function that creates the secrets for a node
-	CreateSecrets(currentNode node.Node) error
-
 	// Function that creates the configuration for the node
 	Configure(currentNode node.Node) error
 
@@ -105,21 +102,6 @@ func Initialize(plugin Plugin) {
 	}
 
 	// Create the commands
-	var createSecretsCmd = &cobra.Command{
-		Use:   "create-secrets <node-file>",
-		Short: "Creates the secrets for a blockchain node and stores them on disk",
-		Args:  cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.Load(args[0])
-
-			if err != nil {
-				return err
-			}
-
-			return plugin.CreateSecrets(currentNode)
-		},
-	}
-
 	var createConfigurationsCmd = &cobra.Command{
 		Use:   "create-configurations <node-file>",
 		Short: "Creates the configurations for a blockchain node and stores them on disk",
@@ -247,7 +229,6 @@ func Initialize(plugin Plugin) {
 	}
 
 	rootCmd.AddCommand(
-		createSecretsCmd,
 		createConfigurationsCmd,
 		startCmd,
 		statusCmd,
