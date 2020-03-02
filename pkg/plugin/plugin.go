@@ -69,21 +69,18 @@ type PluginImpl struct {
 
 	// Plugin meta information
 	meta MetaInfo
-
-	name string
 }
 
 func (d PluginImpl) Name() string {
-	return d.name
+	return d.meta.Name
 }
 
 func (d PluginImpl) Meta() MetaInfo {
 	return d.meta
 }
 
-func NewPlugin(name string, meta MetaInfo, configurator Configurator, lifecycleHandler LifecycleHandler, upgrader Upgrader, tester Tester) Plugin {
+func NewPlugin(meta MetaInfo, configurator Configurator, lifecycleHandler LifecycleHandler, upgrader Upgrader, tester Tester) Plugin {
 	return PluginImpl{
-		name:             name,
 		meta:             meta,
 		Configurator:     configurator,
 		LifecycleHandler: lifecycleHandler,

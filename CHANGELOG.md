@@ -2,8 +2,10 @@
 
 New functionality:
 
-* Support for new plugin protocol version 1.1.0: This version removes the `create-secrets` call. There was a lot of confusion between `create-configurations` and `create-secrets` because most secrets needed to be copied into the configuration anyway to be used. The only benefit was the ability to backup all secrets separately from the configurations. This doesn't warrant the added complexity.
+* Support for new plugin protocol version 1.1.0:
+	* Removes the `create-secrets` call. There was a lot of confusion between `create-configurations` and `create-secrets` because most secrets needed to be copied into the configuration anyway to be used. The only benefit was the ability to backup all secrets separately from the configurations. This doesn't warrant the added complexity.
 Compatibility with the old protocol version 1.0.0 is kept.
+	* Adds plugin name to the plugin meta information
 
 * Add the ability to launch transient containers. This is necessary for some protocols where a container needs to get launched temporarily during configuration, setup or upgrade.
 
