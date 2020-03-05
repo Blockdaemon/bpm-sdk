@@ -20,6 +20,7 @@ type Parameter struct {
 }
 
 type MetaInfo struct {
+	Name            string
 	Version         string
 	Description     string
 	ProtocolVersion string `yaml:"protocol_version"`

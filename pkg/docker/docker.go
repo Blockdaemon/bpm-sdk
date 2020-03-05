@@ -73,6 +73,10 @@ func (bm *BasicManager) addBasePath(myPath string) string {
 	return path.Join(bm.basePath, myPath)
 }
 
+func (bm *BasicManager) SetBasePath(myPath string) {
+	bm.basePath = myPath
+}
+
 // ListContainerNames lists all containers by name
 func (bm *BasicManager) ListContainerNames(ctx context.Context) ([]string, error) {
 	containers, err := bm.cli.ContainerList(ctx, types.ContainerListOptions{All: true})
@@ -289,7 +293,6 @@ func (bm *BasicManager) ContainerRuns(ctx context.Context, container Container) 
 
 	return nil
 }
-
 
 // RunTransientContainer runs a container once and removes it after it is finished.
 func (bm *BasicManager) RunTransientContainer(ctx context.Context, container Container) (string, error) {

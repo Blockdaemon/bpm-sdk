@@ -9,13 +9,14 @@ import (
 	"path"
 	"text/template"
 
-	"github.com/Blockdaemon/bpm-sdk/internal/util"
+	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
 	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 )
 
+// TemplateData wraps the data send to the rendering engine
 type TemplateData struct {
 	Node       node.Node
-	PluginData map[string]interface{} // This allows plugins to add additional data. E.g. a docker plugin can add container data
+	PluginData map[string]interface{}
 }
 
 // ConfigFileRendered renders a template with node confguration and writes it to disk if it doesn't exist yet
@@ -30,7 +31,7 @@ type TemplateData struct {
 func ConfigFileRendered(filename, templateContent string, templateData TemplateData) error {
 	outputFilename := path.Join(templateData.Node.ConfigsDirectory(), filename)
 
-	exists, err := util.FileExists(outputFilename)
+	exists, err := fileutil.FileExists(outputFilename)
 	if err != nil {
 		return err
 	}
@@ -68,8 +69,6 @@ func ConfigFileRendered(filename, templateContent string, templateData TemplateD
 }
 
 // ConfigFilesRendered renderes multiple templates to files
-//
-// Usage:
 func ConfigFilesRendered(filenamesAndTemplates map[string]string, templateData TemplateData) error {
 	for filename, template := range filenamesAndTemplates {
 		if err := ConfigFileRendered(filename, template, templateData); err != nil {
@@ -85,7 +84,7 @@ func ConfigFilesRendered(filenamesAndTemplates map[string]string, templateData T
 func ConfigFileAbsent(filename string, node node.Node) error {
 	filePath := path.Join(node.ConfigsDirectory(), filename)
 
-	exists, err := util.FileExists(filePath)
+	exists, err := fileutil.FileExists(filePath)
 	if err != nil {
 		return err
 	}
