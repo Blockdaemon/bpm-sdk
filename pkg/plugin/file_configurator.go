@@ -3,9 +3,18 @@
 package plugin
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
+
 	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
 	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 	"github.com/Blockdaemon/bpm-sdk/pkg/template"
+)
+
+const (
+	// ConfigsDirectory is the subdirectory under the node directory where configs are saved
+	ConfigsDirectory = "configs"
 )
 
 // FileConfigurator creates configuration files from templates
@@ -16,7 +25,7 @@ type FileConfigurator struct {
 // Configure creates configuration files for the blockchain client
 func (d FileConfigurator) Configure(currentNode node.Node) error {
 	// Create config directory if it doesn't exist yet
-	_, err := fileutil.MakeDirectory(currentNode.ConfigsDirectory())
+	_, err := fileutil.MakeDirectory(currentNode.NodeDirectory(), ConfigsDirectory)
 	if err != nil {
 		return err
 	}
@@ -28,14 +37,9 @@ func (d FileConfigurator) Configure(currentNode node.Node) error {
 
 // RemoveConfig removes configuration files related to the node
 func (d FileConfigurator) RemoveConfig(currentNode node.Node) error {
-	// Remove all configuration files
-	for file := range d.configFilesAndTemplates {
-		if err := template.ConfigFileAbsent(file, currentNode); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	identityPath := filepath.Join(currentNode.NodeDirectory(), ConfigsDirectory)
+	fmt.Printf("Removing directory %q\n", identityPath)
+	return os.RemoveAll(identityPath)
 }
 
 // NewFileConfigurator creates an instance of FileConfigurator

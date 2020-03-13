@@ -44,4 +44,4 @@ Bug fixes:
 
 * Removed outdated documentation and instead linked to the proper up-to-date documentation.
 
-
+* When removing configuration files, also remove the `configs` directory
