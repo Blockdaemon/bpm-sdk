@@ -11,6 +11,8 @@ Compatibility with the old protocol version 1.0.0 is kept.
 
 * Split Plugin interface into multiple smaller interfaces (see details below)
 
+* Create logs directory when node is started using DockerLifecycleHandler
+
 Bug fixes:
 
 * For docker based packages, always expose published ports. Previously if a docker image didn't expose a port it was unavailable even when explicitely published.

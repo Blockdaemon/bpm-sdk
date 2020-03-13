@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/Blockdaemon/bpm-sdk/pkg/docker"
+	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
 	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -22,12 +23,14 @@ type DockerLifecycleHandler struct {
 }
 
 const (
+	// LogsDirectory is the subdirectory under the node directory where logs are saved
+	LogsDirectory          = "logs"
 	filebeatContainerImage = "docker.elastic.co/beats/filebeat:7.4.1"
 	filebeatContainerName  = "filebeat"
 	filebeatConfigFile     = "filebeat.yml"
 	filebeatConfigTpl      = `filebeat.inputs:
 - type: container
-  paths: 
+  paths:
   - '/var/lib/docker/containers/*/*.log'
 fields:
     node:
@@ -57,7 +60,13 @@ func NewDockerLifecycleHandler(containers []docker.Container) DockerLifecycleHan
 
 // Start starts monitoring agents and delegates to another function to start blockchain containers
 func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.NodeDirectory())
+	if err != nil {
+		return err
+	}
+
+	// Create config directory if it doesn't exist yet
+	_, err = fileutil.MakeDirectory(currentNode.NodeDirectory(), LogsDirectory)
 	if err != nil {
 		return err
 	}
