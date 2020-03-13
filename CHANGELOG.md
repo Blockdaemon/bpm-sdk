@@ -8,7 +8,8 @@ New functionality:
 	* Add a `validate-parameters` call (parameters used to be validated implicitely when creating the configurations)
 	* Adds plugin name to the plugin meta information
 
-* Add the ability to launch transient containers. This is necessary for some protocols where a container needs to get launched temporarily during configuration, setup or upgrade.
+* Add the ability to launch transient containers. This is necessary for some protocols where a container needs to get
+  launched temporarily during configuration, setup or upgrade.
 
 * Split Plugin interface into multiple smaller interfaces (see details below)
 
@@ -21,9 +22,14 @@ New functionality:
 
 * Create logs directory when node is started using DockerLifecycleHandler
 
+* Code that handles files now uses the node directory instead of the configs directory as root. Plugin developers need
+  to specify the full path from root (e.g. `configs/a_config_file.json`, `logs/a_log_file.log`) instead of just the
+  filename. This allows more flexibility for the plugins as they can now choose where to store files.
+
 Bug fixes:
 
-* For docker based packages, always expose published ports. Previously if a docker image didn't expose a port it was unavailable even when explicitely published.
+* For docker based packages, always expose published ports. Previously if a docker image didn't expose a port it was
+  unavailable even when explicitely published.
 
 * Removed outdated documentation and instead linked to the proper up-to-date documentation.
 

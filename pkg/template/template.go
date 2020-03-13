@@ -28,8 +28,8 @@ type TemplateData struct {
 //		"${{ $id }}"{{if notLast $index $.Config.core.quorum_set_ids}},{{end}}
 //		{{end -}}
 //
-func ConfigFileRendered(filename, templateContent string, templateData TemplateData) error {
-	outputFilename := path.Join(templateData.Node.ConfigsDirectory(), filename)
+func ConfigFileRendered(filepath, templateContent string, templateData TemplateData) error {
+	outputFilename := path.Join(templateData.Node.NodeDirectory(), filepath)
 
 	exists, err := fileutil.FileExists(outputFilename)
 	if err != nil {
@@ -82,7 +82,7 @@ func ConfigFilesRendered(filenamesAndTemplates map[string]string, templateData T
 
 // ConfigFileAbsent deletes a file if it exists
 func ConfigFileAbsent(filename string, node node.Node) error {
-	filePath := path.Join(node.ConfigsDirectory(), filename)
+	filePath := path.Join(node.NodeDirectory(), filename)
 
 	exists, err := fileutil.FileExists(filePath)
 	if err != nil {

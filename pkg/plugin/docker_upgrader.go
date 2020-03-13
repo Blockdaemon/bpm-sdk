@@ -25,7 +25,7 @@ func NewDockerUpgrader(containers []docker.Container) DockerUpgrader {
 }
 
 func (d DockerUpgrader) Upgrade(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.NodeDirectory())
 	if err != nil {
 		return err
 	}
