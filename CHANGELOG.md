@@ -19,23 +19,6 @@ New functionality:
   manage containers but supply it's own Tester or Upgrader functionality,
   essentially mixing and matching pre-defined and custom functionality.
 
-  Previously this was only possible by "mimicking" inheritance like this
-  which is hard to understand, not very flexible and not go-idiomatic:
-
-  	  // PolkadoDockerPlugin uses DockerPlugin but overwrites functions to add custom test functionality
-  	  type PolkadotDockerPlugin struct {
-  	  	plugin.Plugin
-  	  }
-
-  	  // Test the node
-  	  func (d PolkadotDockerPlugin) Test(currentNode node.Node) (bool, error) {
-  	  	if err := runAllTests(); err != nil {
-  	  		return false, err
-  	  	}
-  	  	return true, nil
-  	  }
-
-
 * Create logs directory when node is started using DockerLifecycleHandler
 
 Bug fixes:
