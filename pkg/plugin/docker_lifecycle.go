@@ -170,7 +170,7 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 
 // DockerStatus returns the status of the running blockchain client and monitoring containers
 func (d DockerLifecycleHandler) Status(currentNode node.Node) (string, error) {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.NodeDirectory())
 	if err != nil {
 		return "", err
 	}
@@ -201,7 +201,7 @@ func (d DockerLifecycleHandler) Status(currentNode node.Node) (string, error) {
 
 // DockerStop removes all containers
 func (d DockerLifecycleHandler) Stop(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.NodeDirectory())
 	if err != nil {
 		return err
 	}
@@ -220,7 +220,7 @@ func (d DockerLifecycleHandler) Stop(currentNode node.Node) error {
 
 // Removes any data (typically the blockchain itself) related to the node
 func (d DockerLifecycleHandler) RemoveData(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.NodeDirectory())
 	if err != nil {
 		return err
 	}
@@ -243,7 +243,7 @@ func (d DockerLifecycleHandler) RemoveData(currentNode node.Node) error {
 
 // Removes the docker network and containers
 func (d DockerLifecycleHandler) RemoveRuntime(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.NodeDirectory())
 	if err != nil {
 		return err
 	}
