@@ -54,13 +54,14 @@ output:
 `
 )
 
+// NewDockerLifecycleHandler creates an instance of DockerLifecycleHandler
 func NewDockerLifecycleHandler(containers []docker.Container) DockerLifecycleHandler {
 	return DockerLifecycleHandler{containers: containers}
 }
 
 // Start starts monitoring agents and delegates to another function to start blockchain containers
 func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.NodeDirectory())
+	client, err := docker.InitializeClient(currentNode)
 	if err != nil {
 		return err
 	}
@@ -74,11 +75,9 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	// First, create the docker network(s) if they don't exist yet
-	for _, container := range d.containers {
-		if err := client.NetworkExists(ctx, container.NetworkID); err != nil {
-			return err
-		}
+	// First, create the docker network if it doesn't exist yet
+	if err := client.NetworkExists(ctx, currentNode.StrParameters["docker-network"]); err != nil {
+		return err
 	}
 
 	//////////////////////////////////////////////////////////////////////////////
@@ -119,7 +118,6 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 			Image: filebeatContainerImage,
 			Cmd:   []string{"-e", "-strict.perms=false"},
 			// using the first containers network is a decent default, if we ever do mult-network deployments we may need to rethink this
-			NetworkID: d.containers[0].NetworkID,
 			Mounts: []docker.Mount{
 				{
 					Type: "bind",
@@ -168,9 +166,9 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 	return nil
 }
 
-// DockerStatus returns the status of the running blockchain client and monitoring containers
+// Status returns the status of the running blockchain client and monitoring containers
 func (d DockerLifecycleHandler) Status(currentNode node.Node) (string, error) {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.NodeDirectory())
+	client, err := docker.InitializeClient(currentNode)
 	if err != nil {
 		return "", err
 	}
@@ -199,9 +197,9 @@ func (d DockerLifecycleHandler) Status(currentNode node.Node) (string, error) {
 	return "incomplete", nil
 }
 
-// DockerStop removes all containers
+// Stop removes all containers
 func (d DockerLifecycleHandler) Stop(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.NodeDirectory())
+	client, err := docker.InitializeClient(currentNode)
 	if err != nil {
 		return err
 	}
@@ -210,7 +208,7 @@ func (d DockerLifecycleHandler) Stop(currentNode node.Node) error {
 	defer cancel()
 
 	for _, container := range d.containers {
-		if err = client.ContainerStopped(ctx, container.Name, container.NetworkID); err != nil {
+		if err = client.ContainerStopped(ctx, container); err != nil {
 			return err
 		}
 	}
@@ -218,9 +216,9 @@ func (d DockerLifecycleHandler) Stop(currentNode node.Node) error {
 	return nil
 }
 
-// Removes any data (typically the blockchain itself) related to the node
+// RemoveData removes any data (typically the blockchain itself) related to the node
 func (d DockerLifecycleHandler) RemoveData(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.NodeDirectory())
+	client, err := docker.InitializeClient(currentNode)
 	if err != nil {
 		return err
 	}
@@ -241,9 +239,9 @@ func (d DockerLifecycleHandler) RemoveData(currentNode node.Node) error {
 	return nil
 }
 
-// Removes the docker network and containers
+// RemoveRuntime removes the docker network and containers
 func (d DockerLifecycleHandler) RemoveRuntime(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.NodeDirectory())
+	client, err := docker.InitializeClient(currentNode)
 	if err != nil {
 		return err
 	}
@@ -252,14 +250,7 @@ func (d DockerLifecycleHandler) RemoveRuntime(currentNode node.Node) error {
 	defer cancel()
 
 	for _, container := range d.containers {
-		if err = client.ContainerAbsent(ctx, container.Name, container.NetworkID); err != nil {
-			return err
-		}
-	}
-
-	// Remove network(s)
-	for _, container := range d.containers {
-		if err := client.NetworkAbsent(ctx, container.NetworkID); err != nil {
+		if err = client.ContainerAbsent(ctx, container); err != nil {
 			return err
 		}
 	}

@@ -19,6 +19,12 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
+	"strings"
+
+	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 	"github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
@@ -26,32 +32,39 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"io/ioutil"
-	"os"
-	"path"
-	"strings"
 )
 
 type BasicManager struct {
-	cli      *client.Client
-	prefix   string
-	basePath string
+	cli       *client.Client
+	prefix    string
+	basePath  string
+	networkID string
+}
+
+// InitializeClient creates a BasicManager from a node.Node
+func InitializeClient(currentNode node.Node) (*BasicManager, error) {
+	networkID := currentNode.StrParameters["docker-network"]
+	namePrefix := currentNode.NamePrefix()
+	nodeDirectory := currentNode.NodeDirectory()
+
+	return NewBasicManager(namePrefix, nodeDirectory, networkID)
 }
 
 // NewBasicManager creates a BasicManager
 //
 // prefix is a string that gets added to every container-, network-, volume-name, etc. started by this client
 // basePath is a path that gets added to every relative file paths. Example with basePath = /home/user/.bpm/nodes/xyz/config: test.yml becomes /home/user/.bpm/nodes/xyz/config/test.yml
-func NewBasicManager(prefix, basePath string) (*BasicManager, error) {
+func NewBasicManager(prefix, basePath, networkID string) (*BasicManager, error) {
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return nil, err
 	}
 
 	return &BasicManager{
-		cli:      cli,
-		prefix:   prefix,
-		basePath: basePath,
+		cli:       cli,
+		prefix:    prefix,
+		networkID: networkID,
+		basePath:  basePath,
 	}, nil
 }
 
@@ -116,24 +129,23 @@ func (bm *BasicManager) ListVolumeIDs(ctx context.Context) ([]string, error) {
 }
 
 // ContainerStopped stops a container if it is running
-func (bm *BasicManager) ContainerStopped(ctx context.Context, containerName, networkID string) error {
-	prefixedName := bm.prefixedName(containerName)
-	prefixedNetwork := bm.prefixedName(networkID)
+func (bm *BasicManager) ContainerStopped(ctx context.Context, container Container) error {
+	prefixedName := bm.prefixedName(container.Name)
 
-	running, err := bm.IsContainerRunning(ctx, containerName)
+	running, err := bm.IsContainerRunning(ctx, container.Name)
 	if err != nil {
 		return err
 	}
 
 	if running {
-		fmt.Printf("Stopping container '%s'\n", containerName)
+		fmt.Printf("Stopping container '%s'\n", prefixedName)
 
 		if err := bm.cli.ContainerStop(ctx, prefixedName, nil); err != nil {
 			return err
 		}
 
-		fmt.Printf("Disconnecting container '%s' from network\n", containerName)
-		if err := bm.cli.NetworkDisconnect(ctx, prefixedNetwork, prefixedName, false); err != nil {
+		fmt.Printf("Disconnecting container '%s' from network\n", bm.networkID)
+		if err := bm.cli.NetworkDisconnect(ctx, bm.networkID, prefixedName, false); err != nil {
 			return err
 		}
 	} else {
@@ -144,14 +156,14 @@ func (bm *BasicManager) ContainerStopped(ctx context.Context, containerName, net
 }
 
 // ContainerAbset stops and removes a container if it is running/exists
-func (bm *BasicManager) ContainerAbsent(ctx context.Context, containerName, networkID string) error {
-	prefixedName := bm.prefixedName(containerName)
+func (bm *BasicManager) ContainerAbsent(ctx context.Context, container Container) error {
+	prefixedName := bm.prefixedName(container.Name)
 
-	if err := bm.ContainerStopped(ctx, containerName, networkID); err != nil {
+	if err := bm.ContainerStopped(ctx, container); err != nil {
 		return err
 	}
 
-	exists, err := bm.doesContainerExist(ctx, containerName)
+	exists, err := bm.doesContainerExist(ctx, container.Name)
 	if err != nil {
 		return err
 	}
@@ -176,15 +188,13 @@ func (bm *BasicManager) NetworkAbsent(ctx context.Context, networkID string) err
 		return err
 	}
 
-	prefixedName := bm.prefixedName(networkID)
-
 	if !exists {
-		fmt.Printf("Cannot find network '%s', skipping removal\n", prefixedName)
+		fmt.Printf("Cannot find network '%s', skipping removal\n", networkID)
 		return nil
 	}
 
-	fmt.Printf("Removing network '%s'\n", prefixedName)
-	return bm.cli.NetworkRemove(ctx, prefixedName)
+	fmt.Printf("Removing network '%s'\n", networkID)
+	return bm.cli.NetworkRemove(ctx, networkID)
 }
 
 // VolumeAbsent removes a network if it exists
@@ -212,15 +222,13 @@ func (bm *BasicManager) NetworkExists(ctx context.Context, networkID string) err
 		return err
 	}
 
-	prefixedName := bm.prefixedName(networkID)
-
 	if exists {
-		fmt.Printf("Network '%s' already exists, skipping creation\n", prefixedName)
+		fmt.Printf("Network '%s' already exists, skipping creation\n", networkID)
 		return nil
 	}
 
-	fmt.Printf("Creating network '%s'\n", prefixedName)
-	_, err = bm.cli.NetworkCreate(ctx, prefixedName, types.NetworkCreate{CheckDuplicate: true})
+	fmt.Printf("Creating network '%s'\n", networkID)
+	_, err = bm.cli.NetworkCreate(ctx, networkID, types.NetworkCreate{CheckDuplicate: true})
 
 	return err
 }
@@ -244,7 +252,6 @@ type Port struct {
 type Container struct {
 	Name        string
 	Image       string
-	NetworkID   string
 	EnvFilename string
 	Mounts      []Mount
 	Ports       []Port
@@ -355,7 +362,7 @@ func (bm *BasicManager) RunTransientContainer(ctx context.Context, container Con
 	}
 
 	// Removing the container after it's done
-	if err := bm.ContainerAbsent(ctx, container.Name, container.NetworkID); err != nil {
+	if err := bm.ContainerAbsent(ctx, container); err != nil {
 		return outputStr, err
 	}
 
@@ -376,7 +383,7 @@ func (bm *BasicManager) doesContainerExist(ctx context.Context, containerName st
 }
 
 func (bm *BasicManager) doesNetworkExist(ctx context.Context, networkID string) (bool, error) {
-	_, err := bm.cli.NetworkInspect(ctx, bm.prefixedName(networkID))
+	_, err := bm.cli.NetworkInspect(ctx, networkID)
 	if err != nil {
 		if client.IsErrNetworkNotFound(err) {
 			return false, nil
@@ -495,8 +502,8 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 
 	// Network config
 	endpointsConfig := make(map[string]*network.EndpointSettings)
-	endpointsConfig[container.NetworkID] = &network.EndpointSettings{
-		NetworkID: bm.prefixedName(container.NetworkID),
+	endpointsConfig[bm.networkID] = &network.EndpointSettings{
+		NetworkID: bm.networkID,
 	}
 	networkConfig := &network.NetworkingConfig{
 		EndpointsConfig: endpointsConfig,
