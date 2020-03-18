@@ -78,39 +78,6 @@ type Plugin interface {
 	Tester
 }
 
-// PluginImpl is an implementation of the Plugin interface. It mostly delegates to other structs
-type PluginImpl struct {
-	ParameterValidator
-	IdentityCreator
-	Configurator
-	LifecycleHandler
-	Upgrader
-	Tester
-
-	// Plugin meta information
-	meta MetaInfo
-}
-
-func (d PluginImpl) Name() string {
-	return d.meta.Name
-}
-
-func (d PluginImpl) Meta() MetaInfo {
-	return d.meta
-}
-
-func NewPlugin(meta MetaInfo, parameterValidator ParameterValidator, identityCreator IdentityCreator, configurator Configurator, lifecycleHandler LifecycleHandler, upgrader Upgrader, tester Tester) Plugin {
-	return PluginImpl{
-		meta:               meta,
-		ParameterValidator: parameterValidator,
-		IdentityCreator:    identityCreator,
-		Configurator:       configurator,
-		LifecycleHandler:   lifecycleHandler,
-		Upgrader:           upgrader,
-		Tester:             tester,
-	}
-}
-
 // Initialize creates the CLI for a plugin
 func Initialize(plugin Plugin) {
 	// Initialize root command

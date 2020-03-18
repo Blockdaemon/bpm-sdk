@@ -8,6 +8,8 @@ New functionality:
 	* Add a `validate-parameters` call (parameters used to be validated implicitely when creating the configurations)
 	* Adds plugin name to the plugin meta information
 
+* New struct `DockerPlugin` that serves as a good starting point for docker based plugins
+
 * Add the ability to launch transient containers. This is necessary for some protocols where a container needs to get
   launched temporarily during configuration, setup or upgrade.
 
