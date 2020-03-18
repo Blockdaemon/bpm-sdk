@@ -8,7 +8,9 @@ const (
 	ParameterTypeBool   = "bool"
 	ParameterTypeString = "string"
 
-	SupportsTest = "test"
+	SupportsTest     = "test"
+	SupportsUpgrade  = "upgrade"
+	SupportsIdentity = "identity"
 )
 
 type Parameter struct {

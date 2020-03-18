@@ -7,6 +7,7 @@ New functionality:
 	* Add a `remove-identity` call similar to `remove-config`
 	* Add a `validate-parameters` call (parameters used to be validated implicitely when creating the configurations)
 	* Adds plugin name to the plugin meta information
+  * Make the `upgrade`, `create-identity`, `remove-identity` calls optional (in addition to `test` which has always been optional)
 
 * New struct `DockerPlugin` that serves as a good starting point for docker based plugins
 

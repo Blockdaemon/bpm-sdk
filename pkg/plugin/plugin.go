@@ -102,20 +102,6 @@ func Initialize(plugin Plugin) {
 		},
 	}
 
-	var createIdentityCmd = &cobra.Command{
-		Use:   "create-identity <node-file>",
-		Short: "Creates the nodes identity (e.g. private keys, certificates, etc.)",
-		Args:  cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.Load(args[0])
-			if err != nil {
-				return err
-			}
-
-			return plugin.CreateIdentity(currentNode)
-		},
-	}
-
 	var createConfigurationsCmd = &cobra.Command{
 		Use:   "create-configurations <node-file>",
 		Short: "Creates the configurations for a blockchain node and stores them on disk",
@@ -155,20 +141,6 @@ func Initialize(plugin Plugin) {
 			}
 
 			return plugin.Stop(currentNode)
-		},
-	}
-
-	var upgradeCmd = &cobra.Command{
-		Use:   "upgrade <node-file>",
-		Short: "Removes the docker containers",
-		Args:  cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.Load(args[0])
-			if err != nil {
-				return err
-			}
-
-			return plugin.Upgrade(currentNode)
 		},
 	}
 
@@ -242,33 +214,16 @@ func Initialize(plugin Plugin) {
 		},
 	}
 
-	var removeIdentityCmd = &cobra.Command{
-		Use:   "remove-identity <node-file>",
-		Short: "Removes the node identity",
-		Args:  cobra.MinimumNArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			currentNode, err := node.Load(args[0])
-			if err != nil {
-				return err
-			}
-
-			return plugin.RemoveIdentity(currentNode)
-		},
-	}
-
 	rootCmd.AddCommand(
 		validateParametersCmd,
-		createIdentityCmd,
 		createConfigurationsCmd,
 		startCmd,
 		statusCmd,
 		stopCmd,
-		upgradeCmd,
 		metaInfoCmd,
 		removeConfigCmd,
 		removeDataCmd,
 		removeRuntimeCmd,
-		removeIdentityCmd,
 	)
 
 	if funk.Contains(plugin.Meta().Supported, SupportsTest) {
@@ -297,6 +252,59 @@ func Initialize(plugin Plugin) {
 		}
 
 		rootCmd.AddCommand(testCmd)
+	}
+
+	if funk.Contains(plugin.Meta().Supported, SupportsUpgrade) {
+		var upgradeCmd = &cobra.Command{
+			Use:   "upgrade <node-file>",
+			Short: "Removes the docker containers",
+			Args:  cobra.MinimumNArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				currentNode, err := node.Load(args[0])
+				if err != nil {
+					return err
+				}
+
+				return plugin.Upgrade(currentNode)
+			},
+		}
+
+		rootCmd.AddCommand(upgradeCmd)
+	}
+
+	if funk.Contains(plugin.Meta().Supported, SupportsIdentity) {
+		var createIdentityCmd = &cobra.Command{
+			Use:   "create-identity <node-file>",
+			Short: "Creates the nodes identity (e.g. private keys, certificates, etc.)",
+			Args:  cobra.MinimumNArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				currentNode, err := node.Load(args[0])
+				if err != nil {
+					return err
+				}
+
+				return plugin.CreateIdentity(currentNode)
+			},
+		}
+
+		var removeIdentityCmd = &cobra.Command{
+			Use:   "remove-identity <node-file>",
+			Short: "Removes the node identity",
+			Args:  cobra.MinimumNArgs(1),
+			RunE: func(cmd *cobra.Command, args []string) error {
+				currentNode, err := node.Load(args[0])
+				if err != nil {
+					return err
+				}
+
+				return plugin.RemoveIdentity(currentNode)
+			},
+		}
+
+		rootCmd.AddCommand(
+			createIdentityCmd,
+			removeIdentityCmd,
+		)
 	}
 
 	// Start it all

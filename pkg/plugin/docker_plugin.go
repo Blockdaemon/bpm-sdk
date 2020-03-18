@@ -31,6 +31,14 @@ func (d DockerPlugin) Meta() MetaInfo {
 		supported = append(supported, SupportsTest)
 	}
 
+	if d.Upgrader != nil {
+		supported = append(supported, SupportsUpgrade)
+	}
+
+	if d.IdentityCreator != nil {
+		supported = append(supported, SupportsIdentity)
+	}
+
 	d.meta.Supported = supported
 
 	return d.meta
