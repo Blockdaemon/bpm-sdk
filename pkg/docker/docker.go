@@ -144,7 +144,7 @@ func (bm *BasicManager) ContainerStopped(ctx context.Context, container Containe
 			return err
 		}
 
-		fmt.Printf("Disconnecting container '%s' from network\n", bm.networkID)
+		fmt.Printf("Disconnecting container '%s' from network\n", prefixedName)
 		if err := bm.cli.NetworkDisconnect(ctx, bm.networkID, prefixedName, false); err != nil {
 			return err
 		}

@@ -7,12 +7,14 @@ import (
 	"context"
 	"io/ioutil"
 	"path"
+	"strings"
 	"text/template"
 	"time"
 
 	"github.com/Blockdaemon/bpm-sdk/pkg/docker"
 	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
 	"github.com/Blockdaemon/bpm-sdk/pkg/node"
+	sdktemplate "github.com/Blockdaemon/bpm-sdk/pkg/template"
 
 	homedir "github.com/mitchellh/go-homedir"
 )
@@ -33,10 +35,27 @@ const (
   paths:
   - '/var/lib/docker/containers/*/*.log'
 fields:
-    node:
-        launch_type: bpm
-        xid: {{ .Node.ID }}
+  node:
+    project: development
+    protocol_type: {{ .Node.PluginName | ToUpper }}
+    user_id: bpm
+    xid: {{ .Node.ID }}
 fields_under_root: true
+processors:
+- add_docker_metadata: null
+- else.add_fields:
+    fields.log_type: system
+    target: ''
+  if.or:
+  {{- range $container := .PluginData.Containers }}
+    {{- if $container.CollectLogs }}
+  - equals.container.name: {{ $.Node.NamePrefix }}{{ $container.Name }}
+    {{- end }}
+  {{- end }}
+  then.add_fields:
+    fields.log_type: user
+    target: ''
+- drop_event.when.not.equals.log_type: user
 output:
 {{- if .Node.Collection.Host }}
     logstash:
@@ -51,6 +70,9 @@ output:
     console:
         pretty: true
 {{- end }}
+logging:
+  files:
+    rotateeverybytes: 10485760
 `
 )
 
@@ -99,12 +121,19 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 
 		// Render filebeat config file
 		outputFilename := path.Join(currentNode.NodeDirectory(), filebeatConfigFile)
-		tmpl, err := template.New(outputFilename).Parse(filebeatConfigTpl)
+		funcMap := template.FuncMap{
+			"ToUpper": strings.ToUpper,
+		}
+		tmpl, err := template.New(outputFilename).Funcs(funcMap).Parse(filebeatConfigTpl)
 		if err != nil {
 			return err
 		}
+		templateData := sdktemplate.TemplateData{
+			Node:       currentNode,
+			PluginData: map[string]interface{}{"Containers": d.containers},
+		}
 		output := bytes.NewBufferString("")
-		err = tmpl.Execute(output, currentNode)
+		err = tmpl.Execute(output, templateData)
 		if err != nil {
 			return err
 		}
@@ -143,6 +172,11 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 					Type: "bind",
 					From: currentNode.Collection.Key,
 					To:   "/etc/ssl/beats/beat.key",
+				},
+				{
+					Type: "bind",
+					From: "/var/run/docker.sock",
+					To:   "/var/run/docker.sock",
 				},
 			},
 			User: "root",
@@ -213,6 +247,20 @@ func (d DockerLifecycleHandler) Stop(currentNode node.Node) error {
 		}
 	}
 
+	//////////////////////////////////////////////////////////////////////////////
+	// TODO: This is just temporarily until we have a proper authentication system
+	//////////////////////////////////////////////////////////////////////////////
+	filebeatContainer := docker.Container{
+		Name: filebeatContainerName,
+	}
+
+	if err = client.ContainerStopped(ctx, filebeatContainer); err != nil {
+		return err
+	}
+	//////////////////////////////////////////////////////////////////////////////
+	// TODO end
+	//////////////////////////////////////////////////////////////////////////////
+
 	return nil
 }
 
@@ -254,6 +302,20 @@ func (d DockerLifecycleHandler) RemoveRuntime(currentNode node.Node) error {
 			return err
 		}
 	}
+
+	//////////////////////////////////////////////////////////////////////////////
+	// TODO: This is just temporarily until we have a proper authentication system
+	//////////////////////////////////////////////////////////////////////////////
+	filebeatContainer := docker.Container{
+		Name: filebeatContainerName,
+	}
+
+	if err = client.ContainerAbsent(ctx, filebeatContainer); err != nil {
+		return err
+	}
+	//////////////////////////////////////////////////////////////////////////////
+	// TODO end
+	//////////////////////////////////////////////////////////////////////////////
 
 	return nil
 }
