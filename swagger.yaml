@@ -12,23 +12,23 @@ info:
     name: Apache 2.0
     url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
   description: |
-    # Overview
+    # Getting Started
 
     ## What is a BPM package?
 
-    A BPM package is, in it's simplest form, just a binary that accepts certain commands and returns specific values. While it is possible to write a package in any programming language as long as it fullfils the [Package Contract](contract.md), it is recommended and significantly easier to use the provided GO [SDK](sdk.md).
+    A BPM package is, in it's simplest form, just a binary that accepts certain commands and returns specific values. While it is possible to write a package in any programming language as long as it fulfills the [Package Contract](#section/Package-Contract), it is recommended and significantly easier to use the provided [Go SDK](#section/Go-SDK).
 
     ## How to implement a new package?
 
     The different ways to develop a package are:
 
-    - [Implementing a package for docker deploy](docker.md) to create a package using the Go [SDK](sdk.md)
-    - [Implementing a package for arbitrary deploy targets](plugin.md) to create a package using the Go [SDK](sdk.md)
-    - Implement a binary that fullfils the [Package Contract](contract.md) to create a BPM package in any programming language
+    - [Implementing a package for docker deploy](#section/Go-SDK/Implementing-a-package-for-docker-deploy) using the [Go SDK](#section/Go-SDK)
+    - [Implementing a package for arbitrary deploy targets](#section/Go-SDK/Implementing-a-package-for-arbitrary-deploy-targets) using the [Go SDK](#section/Go-SDK)
+    - Implementing a binary that fulfillls the [Package Contract](#section/Package-Contract) to create a BPM package in any programming language
 
-    Before implementing a new package we recommend to review the example workflow below to get a feel for how a package interacts with the BPM CLI. After that we recommend to jump right into [Implementing a package for docker deploy](docker.md).
+    Before implementing a new package we recommend to review the example workflow below to get a feel for how a package interacts with the `bpm` cli. After that we recommend to jump right into [Implementing a package for docker deploy](#section/Go-SDK/Implementing-a-package-for-docker-deploy).
 
-    In addition the [Development tipps & tricks](dev.md) can be quite useful.
+    In addition the [Development Tipps](#section/Development-Tipps) can be quite useful.
 
     ## Submitting a package
 
@@ -36,38 +36,42 @@ info:
 
     # BPM workflow
 
-    ![Configure Example](https://raw.githubusercontent.com/Blockdaemon/bpm-docs/master/docs/package/configure.png)
+    The communication between `bpm` and a package is based on the following ideas:
 
-    ## Install a package
+    * A bpm package is a binary that supports commands defined in this document
+    * `bpm` calls the package's `meta` command to get information about the package
+    * `bpm` calls other package commands to manage a node
+    * `bpm` passes node information to the package via `node.json` file
+
+    ## Installing a package
+
+    ![Install Diagram](https://raw.githubusercontent.com/Blockdaemon/bpm-sdk/automation/docs/install.png)
 
     When a user runs `bpm install <package>`:
 
-    1. BPM CLI will download the package from the Blockchain Package Registry
-    2. BPM CLI will call the package with the `meta` command. This returns the meta information (e.g. version, allowed parameters, etc.) about the package.
-    3. BPM CLI will save the package information in the `manifest.json`
+    1. `bpm` downloads the package binary from the Blockchain Package Registry into `~/.bpm/plugins/<package>`
+    2. `bpm` calls `~/.bpm/plugins/<package> meta`. This returns the meta information (e.g. version, allowed parameters, etc.) about the package.
+    3. `bpm` saves the package information in `~/.bpm/manifest.json`
 
-    ## Configure a node:
+    ## Configuring a node
 
-    When a user runs `bpm configure <package> --parameter1 --parameter2`:
+    ![Configure Diagram](https://raw.githubusercontent.com/Blockdaemon/bpm-sdk/automation/docs/configure.png)
 
-    1. BPM CLI will generate a new unique ID for the node (e.g. `bnn8hpbo6himpbucrhng`) and the directory `~/.bpm/nodes/<node-id>/`
-    2. BPM CLI will create the file `~/.bpm/nodes/<node-id>/node.json` which contains:
-      - node-id
-      - package name
-      - all parameters passed to the configure command
-    3. BPM CLI will call the `create-secrets` command with `node.json` as parameter: `create-secrets ~/.bpm/nodes/<node-id>/node.json`
-      - The package will read `node.json` to get the parameters and generate secrets in `~/.bpm/nodes/<node-id>/secrets`.
-    4. BPM CLI will call the `create-configurations` command with `node.json` as parameter: `create-configurations ~/.bpm/nodes/<node-id>/node.json`
-      - The package will read `node.json` to get the parameters and generate secrets in `~/.bpm/nodes/<node-id>/configs`.
+    When a user runs `bpm configure <package> --parameter1 --parameter2 foo`:
 
-    ## Start a node:
+    1. `bpm` creates the file `~/.bpm/nodes/<node-id>/node.json` which contains the parameters specified in the `bpm configure` command
+    2. `bpm` calls `~/.bpm/plugins/<package> validate-parameters ~/.bpm/nodes/<node-id>/node.json`. This validates the parameters that are stored in `node.json`
+    3. If supported (based on the meta information), `bpm` calls `~/.bpm/plugins/<package> create-identity ~/.bpm/nodes/<node-id>/node.json`. This creates the identity (e.g. private keys) of the node
+    4. `bpm` calls `~/.bpm/plugins/<package> create-configurations ~/.bpm/nodes/<node-id>/node.json`. This creates the configuration for the blockchain runtime
 
-    When a user runs`bpm start <node-id>`:
+    ## Starting a node
 
-    1. BPM CLI will call the package with the `start` command.
-    2. The package will read the `node.json` to get details about the node.
-    3. The package will start the runtime. For docker based packages this means:
-      - Create a new docker network (if it doesn't exist yet)
+    ![Start Diagram](https://raw.githubusercontent.com/Blockdaemon/bpm-sdk/automation/docs/start.png)
+
+    When a user runs `bpm start <node-id>`:
+
+    1. `bpm` calls `~/.bpm/plugins/<package> start ~/.bpm/nodes/<node-id>/node.json`. Most packages currently deploy to Docker using these steps:
+      - Create a docker network (if it doesn't exist yet)
       - Create all the blockchain client docker container(s) and containers with the monitoring agents (if they don't exist yet)
       - Start the docker containers (if they aren't started yet)
 
@@ -85,15 +89,15 @@ info:
 
     ## Debug mode and troubleshooting
 
-    BPM CLI has a debug mode to print more information about it's internal doings. Just add `--debug` to any command. Example:
+    `bpm` has a debug mode to print more information about it's internal doings. Just add `--debug` to any command. Example:
 
     ```
     bpm packages install <package name> --debug --from-file <package file>
     ```
 
-    ## Running a package directly without BPM CLI
+    ## Running a package directly without `bpm`
 
-    Sometimes it can be useful to run individual package commands directly, without invoking the bpm cli. This allows to test those commands individually. Please note that this is not how an end user would run a package.
+    Sometimes it can be useful to run individual package commands directly, without invoking the `bpm`. This allows to test those commands individually. Please note that this is not how an end user would run a package.
 
     To run a package directly we first have to create a node configuration file (`node.json` - although for this purpose it can be an arbitrary filename). Please refer to [node.json](contract.md#nodejson-structure) for details about the file format. A useful starting point is to copy an existing `node.json` from `~/.bpm/nodes/<node-id>/node.json`.
 
@@ -206,7 +210,7 @@ info:
     bpm nodes remove --all a-test-node
     ```
 
-    It can sometimes be useful during development to use the package directly without going through the BPM CLI. Remember, a package is itself just a binary so it can be executed directly:
+    It can sometimes be useful during development to use the package directly without going through the `bpm`. Remember, a package is itself just a binary so it can be executed directly:
 
     ```
     ./test --help
@@ -255,7 +259,7 @@ info:
     }
     ```
 
-    After building and reinstalling the package we can now set the subtype using the BPM CLI:
+    After building and reinstalling the package we can now set the subtype using the `bpm`:
 
     ```
     go build -o test main.go
@@ -375,7 +379,7 @@ info:
     bpm nodes start a-test-node
     ```
 
-    This should start a container called `bpm-a-test-node-polkadot`. We can check the status using BPM CLI:
+    This should start a container called `bpm-a-test-node-polkadot`. We can check the status using `bpm`:
 
     ```
     bpm nodes status
@@ -396,7 +400,7 @@ info:
 
     ## Overview
 
-    The following sections describe how the `bpm-cli` communicates with a bpm package. The `bpm-sdk` makes it easy to implement a package correctly so that it follows the contract described here.
+    The following sections describe how the `bpm-cli` communicates with a bpm package. The [Go SDK](#section/Go-SDK) makes it easy to implement a package correctly so that it follows the contract described here.
 
     Each package is a binary file that:
 
@@ -435,23 +439,28 @@ info:
 
     ## Commands
 
-    Each package needs to implement the following (mandatory) commands:
+    Each package must implement the following commands:
 
-    | Command               | Mandatory | Description |
-    | --------------------- | --------- | ----------- |
-    | create-configurations | Yes       | Creates the configurations for a blockchain node |
-    | create-identity       | No        | Creates the nodes identity (e.g. private keys, certificates, etc.) |
-    | meta                  | Yes       | Shows meta information such as allowed parameters for this plugin |
-    | remove-config         | Yes       | Removes the node configuration |
-    | remove-data           | Yes       | Removes the node data |
-    | remove-identity       | No        | Removes the node identity |
-    | remove-runtime        | Yes       | Removes everything related to the node itself but no data, identity or configs |:was
-    | start                 | Yes       | Starts the node |
-    | status                | Yes       | Gives information about the current node status |
-    | stop                  | Yes       | Stops the node |
-    | upgrade               | No        | Upgrades the node to a newer version of a package |
-    | validate-parameters   | Yes       | Validates the parameters in the node file |
-    | test                  | No        | Runs a test suite against the running node |
+    | Command               | Description |
+    | --------------------- | ----------- |
+    | create-configurations | Creates the configurations for a blockchain node |
+    | meta                  | Shows meta information such as allowed parameters for this plugin |
+    | remove-config         | Removes the node configuration |
+    | remove-data           | Removes the node data |
+    | remove-runtime        | Removes everything related to the node itself but no data, identity or configs |:was
+    | start                 | Starts the node |
+    | status                | Gives information about the current node status |
+    | stop                  | Stops the node |
+    | validate-parameters   | Validates the parameters in the node file |
+
+    Each package may implement some of the following commands:
+
+    | Command               | Description |
+    | --------------------- | ----------- |
+    | create-identity       | Creates the nodes identity (e.g. private keys, certificates, etc.) |
+    | remove-identity       | Removes the node identity |
+    | upgrade               | Upgrades the node to a newer version of a package |
+    | test                  | Runs a test suite against the running node |
 
     Non-mandatory commands may or may not be implemented in a bpm package. The `meta` command returns information about
     the package, incl. information about which optional commands are available.
@@ -466,19 +475,20 @@ info:
 
     * If something fails, the command must return an error code that is not 0
     * Error messages must go to stderr
-    * Commands must be idempoten:
+    * Commands must be idempotent
 
     > An operation is idempotent if the result of performing it once is exactly the same as the result of performing it repeatedly without any intervening actions. [[1]](https://docs.ansible.com/ansible/latest/reference_appendices/glossary.html)
 
-    This is typically implemented by first checking if an action has already been applied and only take action if it hasn't. This has a few benefits:
+    This is typically implemented by first checking if an action has already been applied and only taking action if it hasn't. This has a few benefits:
 
     - It allows manual intervention. Example: A user can supply their own node secret. If the file already exists, bpm will not re-create it
     - Commands can be run multiple times without causing weird side effects
+    - Automation is easier because we don't need to save state (i.e. which commands where already executed)
     - Implementing new plugins is simpler because one can just re-run the command while implementing it
 
     ## meta
 
-    Every package needs to implement a `meta` command. This command returns information about the package in yaml format. This information is being used by the BPM CLI.
+    Every package needs to implement a `meta` command. This command returns information about the package in yaml format. This information is being used by the `bpm`.
 
     ### meta example
 
@@ -515,12 +525,12 @@ info:
     | ---------------------- | ----------- |
     | version                | The version of the package used to configure this node. This is useful to know when upgrading the node |
     | description            | A human-readable description of the package |
-    | protocol_version       | A version denoting the protocol between BPM CLI and the package (i.e. what is described in this document). Currently only a value of `1.0.0` is valid. |
+    | protocol_version       | A version denoting the protocol between `bpm` and the package (i.e. what is described in this document). Current version is `1.1.0`. |
     | parameters             | A list of parameters that can be used during the `nodes configure <package>` command |
     | parameters.type        | `string` or `bool` |
     | parameters.name        | The name of the parameter, should use `-` to separate words |
     | parameters.description | A human-readable description of the parameter |
-    | parameters.mandatory   | Whether the parameter is mandatory. If a parameter is mandatory, BPM CLI will enforce that parameter. If not it will use the default value. |
+    | parameters.mandatory   | Whether the parameter is mandatory. If a parameter is mandatory, `bpm` will enforce that parameter. If not it will use the default value. |
     | parameters.default     | The default value if no parameter is specified by the user |
     | supported              | A list of supported methods |
 
