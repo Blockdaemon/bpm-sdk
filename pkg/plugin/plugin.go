@@ -104,7 +104,7 @@ func Initialize(plugin Plugin) {
 
 	var createConfigurationsCmd = &cobra.Command{
 		Use:   "create-configurations <node-file>",
-		Short: "Creates the configurations for a blockchain node and stores them on disk",
+		Short: "Creates the configurations for a node",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			currentNode, err := node.Load(args[0])
@@ -118,7 +118,7 @@ func Initialize(plugin Plugin) {
 
 	var startCmd = &cobra.Command{
 		Use:   "start <node-file>",
-		Short: "Starts the docker containers",
+		Short: "Starts the node",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			currentNode, err := node.Load(args[0])
@@ -132,7 +132,7 @@ func Initialize(plugin Plugin) {
 
 	var stopCmd = &cobra.Command{
 		Use:   "stop <node-file>",
-		Short: "Stops the docker containers",
+		Short: "Stops the node",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			currentNode, err := node.Load(args[0])
@@ -146,7 +146,7 @@ func Initialize(plugin Plugin) {
 
 	var statusCmd = &cobra.Command{
 		Use:   "status <node-file>",
-		Short: "Gives information about the current status",
+		Short: "Gives information about the current node status",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			currentNode, err := node.Load(args[0])
@@ -166,7 +166,7 @@ func Initialize(plugin Plugin) {
 
 	var metaInfoCmd = &cobra.Command{
 		Use:   "meta",
-		Short: "Shows meta information such as allowed parameters for this plugin",
+		Short: "Shows meta information for this package",
 		Run: func(cmd *cobra.Command, args []string) {
 			fmt.Println(plugin.Meta())
 		},
@@ -174,7 +174,7 @@ func Initialize(plugin Plugin) {
 
 	var removeConfigCmd = &cobra.Command{
 		Use:   "remove-config <node-file>",
-		Short: "Remove the node configuration files",
+		Short: "Removes the node configuration",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			currentNode, err := node.Load(args[0])
@@ -188,7 +188,7 @@ func Initialize(plugin Plugin) {
 
 	var removeDataCmd = &cobra.Command{
 		Use:   "remove-data <node-file>",
-		Short: "Remove the node data",
+		Short: "Removes the node data (i.e. already synced blockchain)",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			currentNode, err := node.Load(args[0])
@@ -202,7 +202,7 @@ func Initialize(plugin Plugin) {
 
 	var removeRuntimeCmd = &cobra.Command{
 		Use:   "remove-runtime <node-file>",
-		Short: "Remove everything related to the node itself but no data, identity or configs",
+		Short: "Removes everything related to the node itself but no data, identity or configs",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			currentNode, err := node.Load(args[0])
@@ -257,7 +257,7 @@ func Initialize(plugin Plugin) {
 	if funk.Contains(plugin.Meta().Supported, SupportsUpgrade) {
 		var upgradeCmd = &cobra.Command{
 			Use:   "upgrade <node-file>",
-			Short: "Removes the docker containers",
+			Short: "Upgrades the node to a newer version of a package",
 			Args:  cobra.MinimumNArgs(1),
 			RunE: func(cmd *cobra.Command, args []string) error {
 				currentNode, err := node.Load(args[0])
