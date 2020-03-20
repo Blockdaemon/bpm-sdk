@@ -1,6 +1,7 @@
 package plugin
 
 import (
+	"github.com/thoas/go-funk"
 	"gopkg.in/yaml.v2"
 )
 
@@ -37,4 +38,9 @@ func (p MetaInfo) String() string {
 	}
 
 	return string(d)
+}
+
+// Supports returns bool if a particular method is supported
+func (p MetaInfo) Supports(supported string) bool {
+	return funk.ContainsString(p.Supported, supported)
 }
