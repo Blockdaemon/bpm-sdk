@@ -1,11 +1,12 @@
 swagger: '2.0'
 info:
-  title: BPM
+  title: BPM SDK
   contact:
     email: support@blockdaemon.com
     url: https://www.blockdaemon.com
   x-logo:
-    url: 'https://redocly.github.io/redoc/petstore-logo.png'
+    url: "https://images.ctfassets.net/rasr8fpc604w/4SkzlDeysPc2lGkv7JttCm/1b128e1d30f42336015e30ddec3c138f/dark-logo.png"
+    backgroundColor: "#fafafa"
     altText: Blockdaemon logo
   license:
     name: Apache 2.0
