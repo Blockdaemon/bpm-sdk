@@ -20,12 +20,14 @@ type DockerUpgrader struct {
 	containers []docker.Container
 }
 
+// NewDockerUpgrader instantiates DockerUpgrader
 func NewDockerUpgrader(containers []docker.Container) DockerUpgrader {
 	return DockerUpgrader{containers: containers}
 }
 
+// Upgrade upgrades all containers by removing and starting them again
 func (d DockerUpgrader) Upgrade(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	client, err := docker.InitializeClient(currentNode)
 	if err != nil {
 		return err
 	}
@@ -47,7 +49,7 @@ func (d DockerUpgrader) Upgrade(currentNode node.Node) error {
 
 	// Remove containers
 	for _, container := range d.containers {
-		if err = client.ContainerAbsent(ctx, container.Name, container.NetworkID); err != nil {
+		if err = client.ContainerAbsent(ctx, container); err != nil {
 			return err
 		}
 	}

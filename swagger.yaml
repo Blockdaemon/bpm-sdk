@@ -1,0 +1,544 @@
+swagger: '2.0'
+info:
+  title: BPM SDK
+  contact:
+    email: support@blockdaemon.com
+    url: https://www.blockdaemon.com
+  x-logo:
+    url: "https://images.ctfassets.net/rasr8fpc604w/4SkzlDeysPc2lGkv7JttCm/1b128e1d30f42336015e30ddec3c138f/dark-logo.png"
+    backgroundColor: "#fafafa"
+    altText: Blockdaemon logo
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+  description: |
+    # Getting Started
+
+    ## What is a BPM package?
+
+    A BPM package is, in it's simplest form, just a binary that accepts certain commands and returns specific values. While it is possible to write a package in any programming language as long as it fulfills the [Package Contract](#section/Package-Contract), it is recommended and significantly easier to use the provided [Go SDK](#section/Go-SDK).
+
+    ## How to implement a new package?
+
+    The different ways to develop a package are:
+
+    - [Implementing a package for docker deploy](#section/Go-SDK/Implementing-a-package-for-docker-deploy) using the [Go SDK](#section/Go-SDK)
+    - [Implementing a package for arbitrary deploy targets](#section/Go-SDK/Implementing-a-package-for-arbitrary-deploy-targets) using the [Go SDK](#section/Go-SDK)
+    - Implementing a binary that fulfillls the [Package Contract](#section/Package-Contract) to create a BPM package in any programming language
+
+    Before implementing a new package we recommend to review the example workflow below to get a feel for how a package interacts with the `bpm` cli. After that we recommend to jump right into [Implementing a package for docker deploy](#section/Go-SDK/Implementing-a-package-for-docker-deploy).
+
+    In addition the [Development Tipps](#section/Development-Tipps) can be quite useful.
+
+    ## Submitting a package
+
+    To submit a new package for inclusion in the Blockchain Package Registry, please contact the [Blockdaemon support](mailto:support@blockdaemon.com).
+
+    # BPM workflow
+
+    The communication between `bpm` and a package is based on the following ideas:
+
+    * A bpm package is a binary that supports commands defined in this document
+    * `bpm` calls the package's `meta` command to get information about the package
+    * `bpm` calls other package commands to manage a node
+    * `bpm` passes node information to the package via `node.json` file
+
+    ## Installing a package
+
+    ![Install Diagram](https://raw.githubusercontent.com/Blockdaemon/bpm-sdk/automation/docs/install.png)
+
+    When a user runs `bpm install <package>`:
+
+    1. `bpm` downloads the package binary from the Blockchain Package Registry into `~/.bpm/plugins/<package>`
+    2. `bpm` calls `~/.bpm/plugins/<package> meta`. This returns the meta information (e.g. version, allowed parameters, etc.) about the package.
+    3. `bpm` saves the package information in `~/.bpm/manifest.json`
+
+    ## Configuring a node
+
+    ![Configure Diagram](https://raw.githubusercontent.com/Blockdaemon/bpm-sdk/automation/docs/configure.png)
+
+    When a user runs `bpm configure <package> --parameter1 --parameter2 foo`:
+
+    1. `bpm` creates the file `~/.bpm/nodes/<node-id>/node.json` which contains the parameters specified in the `bpm configure` command
+    2. `bpm` calls `~/.bpm/plugins/<package> validate-parameters ~/.bpm/nodes/<node-id>/node.json`. This validates the parameters that are stored in `node.json`
+    3. If supported (based on the meta information), `bpm` calls `~/.bpm/plugins/<package> create-identity ~/.bpm/nodes/<node-id>/node.json`. This creates the identity (e.g. private keys) of the node
+    4. `bpm` calls `~/.bpm/plugins/<package> create-configurations ~/.bpm/nodes/<node-id>/node.json`. This creates the configuration for the blockchain runtime
+
+    ## Starting a node
+
+    ![Start Diagram](https://raw.githubusercontent.com/Blockdaemon/bpm-sdk/automation/docs/start.png)
+
+    When a user runs `bpm start <node-id>`:
+
+    1. `bpm` calls `~/.bpm/plugins/<package> start ~/.bpm/nodes/<node-id>/node.json`. Most packages currently deploy to Docker using these steps:
+      - Create a docker network (if it doesn't exist yet)
+      - Create all the blockchain client docker container(s) and containers with the monitoring agents (if they don't exist yet)
+      - Start the docker containers (if they aren't started yet)
+
+    # Development Tipps
+
+    ## Installing a package from a binary
+
+    Usually packages are installed by downloading a file from the package registry. During development it is often useful to install directly from a local file.
+
+    This can be done with the following command:
+
+    ```
+    bpm packages install <package name> --from-file <package file>
+    ```
+
+    ## Debug mode and troubleshooting
+
+    `bpm` has a debug mode to print more information about it's internal doings. Just add `--debug` to any command. Example:
+
+    ```
+    bpm packages install <package name> --debug --from-file <package file>
+    ```
+
+    ## Running a package directly without `bpm`
+
+    Sometimes it can be useful to run individual package commands directly, without invoking the `bpm`. This allows to test those commands individually. Please note that this is not how an end user would run a package.
+
+    To run a package directly we first have to create a node configuration file (`node.json` - although for this purpose it can be an arbitrary filename). Please refer to [node.json](contract.md#nodejson-structure) for details about the file format. A useful starting point is to copy an existing `node.json` from `~/.bpm/nodes/<node-id>/node.json`.
+
+    With the node configuration file it is possible to run a package command like this:
+
+    ```
+    ./binaries/skeleton-master-darwin-amd64 create-secrets node.json
+    ```
+
+    ## Automatically setting the version
+
+    Go has the capability to overwrite variables at compile time like this:
+
+    ```bash
+    go build -ldflags "-X main.version=$VERSION" -o plugin-name cmd/main.go
+    ```
+
+    This can be used in a continuous integration pipeline to automatically version the binaries with e.g. the current git tag.
+
+    See https://github.com/Blockdaemon/bpm-skel/blob/master/Makefile for an example.
+
+    # Go SDK
+
+    The BPM SDK makes it easy to implement new packages using the Go programming language. Find the sourcecode at [Github](https://github.com/Blockdaemon/bpm-sdk).
+
+    ## SDK Components
+
+    ### docker
+
+    Package docker provides a simple docker abstraction layer that makes it very easy to start and remove docker containers, networks and volumes.
+
+    For more information please refer to the [API documentation](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/docker).
+
+    ### node
+
+    Package node provides an easy way to access node related information.
+
+    For more information please refer to the [API documentation](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/node).
+
+    ### template
+
+    Package template implements functions to render Go templates to files using the node.Node struct as an imnput for the templates.
+
+    For more information please refer to the [API documentation](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/template).
+
+    ### plugin
+
+    Package plugin provides an easy way to create the required CLI for a plugin. It abstracts away all the command line and file parsing so users just need to implement the actual logic.
+
+    For more information please refer to the [API documentation](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/plugin).
+
+    ## Implementing a package for docker deploy
+
+    Most current packages deploy simple docker containers. The Go SDK provides the base functionality for this.
+
+    What follows is a step by step introduction for writing a package.
+
+    A complete but simple example is available on github for [Polkadot](https://github.com/Blockdaemon/bpm-polkadot).
+    A more advanced example with multiple containers and configuration parameters is available on github for [Stellar](https://github.com/Blockdaemon/bpm-stellar).
+
+    ### Create an empty package
+
+    In a new and empty directory, create a file `main.go` with the following content:
+
+    ```
+    package main
+
+    import (
+      "github.com/Blockdaemon/bpm-sdk/pkg/docker"
+      "github.com/Blockdaemon/bpm-sdk/pkg/plugin"
+    )
+
+    func main() {
+      parameters := []plugin.Parameter{}
+
+      templates := map[string]string{}
+
+      containers := []docker.Container{}
+
+      name := "test"
+      version := "1.0.0"
+      description := "A test package"
+
+      testPlugin := plugin.NewDockerPlugin(name, version, description, parameters, templates, containers)
+      plugin.Initialize(testPlugin)
+    }
+    ```
+
+    `plugin.NewDockerPlugin` does most of the heavy lifting here. It instantiates an implementation of `Plugin` with useful defaults for docker deployments.
+
+    This is already a fully functional BPM package. We haven't implemented any `templates`, `parameters` or `containers` yet so the package won't do much.
+
+    Build the package binary:
+
+    ```
+    go build -o test main.go
+    ```
+
+    Usually a user would install a package from the BPM Registry. To shorten the development cycle we will instead install the package directly from the local file:
+
+    ```
+    bpm packages install test --from-file ./test
+    ```
+
+    Finally, we can test our package:
+
+    ```
+    bpm nodes configure test --name a-test-node
+    bpm nodes start a-test-node
+    bpm nodes remove --all a-test-node
+    ```
+
+    It can sometimes be useful during development to use the package directly without going through the `bpm`. Remember, a package is itself just a binary so it can be executed directly:
+
+    ```
+    ./test --help
+    ```
+
+    should print the following help:
+
+    ```
+    A test package
+
+    Usage:
+      test [command]
+
+    Available Commands:
+      create-configurations Creates the configurations for a blockchain node and stores them on disk
+      help                  Help about any command
+      meta                  Shows meta information such as allowed parameters for this plugin
+      remove-config         Remove the node configuration files
+      remove-data           Remove the node data
+      remove-runtime        Remove everything related to the node itself but no data, identity or configs
+      start                 Starts the docker containers
+      status                Gives information about the current status
+      stop                  Stops the docker containers
+      upgrade               Removes the docker containers
+      validate-parameters   Validates the parameters in the node file
+
+    Flags:
+      -h, --help   help for test
+
+    Use "test [command] --help" for more information about a command.
+    ```
+
+    ### Define the parameters
+
+    We want to be able to parameterize the package. A common example is to to provide different "node configuration types". Let's add a parameter to switch between `watcher` and `validator` nodes.
+
+    ```
+    parameters := []plugin.Parameter{
+      {
+        Name:        "subtype",
+        Type:        plugin.ParameterTypeString,
+        Description: "The type of node. Must be either `watcher` or `validator`",
+        Mandatory:   false,
+        Default:     "watcher",
+      },
+    }
+    ```
+
+    After building and reinstalling the package we can now set the subtype using the `bpm`:
+
+    ```
+    go build -o test main.go
+    bpm packages install test --from-file ./test
+    bpm nodes configure test --name a-test-node --subtype watcher
+    ```
+
+    The resulting node configuration file in  `~/.bpm/nodes/a-test-node/node.json` should now contain the value specified using `--subtype`:
+
+    ```
+    {
+      "id": "a-test-node",
+      "plugin": "test",
+      "str_parameters": {
+        "docker-network": "bpm",
+        "subtype": "watcher"
+      },
+      "bool_parameters": {},
+      "version": "1.0.0"
+    }
+    ```
+
+    Remove the node before continuing with the next step:
+
+    ```
+    bpm nodes remove --all a-test-node
+    ```
+
+    ### Configuration templates
+
+    Before launching containers we need to create a configuration file for the blockchain software. By default, the `plugin.NewDockerPlugin` creates a package
+    that uses `plugin.FileConfigurator` to generate configuration files from templates. All we need to do is provide a template and a destination filename for the new
+    configuration file.
+
+    ```
+    polkadotTemplate := `polkadot
+    --base-path
+    /data
+    --rpc-external
+    --name
+    {{ .Node.ID }}
+    --chain
+    alexander
+    {{ if eq .Node.StrParameters.subtype "validator" }}
+    --validator
+    {{- end }}
+    `
+
+    templates := map[string]string{
+      "configs/polkadot.cmd": polkadotTemplate,
+    }
+    ```
+
+    Again, let's build and run the package to see the outcome:
+
+    ```
+    go build -o test main.go
+    bpm packages install test --from-file ./test
+    bpm nodes configure test --name a-test-node --subtype watcher
+    ```
+
+    It should create a file in `~/.bpm/nodes/a-test-node/configs/polkadot.cmd` with the following content:
+
+    ```
+    polkadot
+    --base-path
+    /data
+    --rpc-external
+    --name
+    a-test-node
+    --chain
+    alexander
+    ```
+
+    ### Containers
+
+    Finally, for the package to actually do something we need to define a container that launches the blockchain software.
+
+    ```
+    containers := []docker.Container{
+      {
+        Name:    "polkadot",
+        Image:   "docker.io/chevdor/polkadot:0.4.4",
+        CmdFile: "configs/polkadot.cmd",
+        Mounts: []docker.Mount{
+          {
+            Type: "volume",
+            From: "polkadot-data",
+            To:   "/data",
+          },
+        },
+        Ports: []docker.Port{
+          {
+            HostIP:        "0.0.0.0",
+            HostPort:      "30333",
+            ContainerPort: "30333",
+            Protocol:      "tcp",
+          },
+          {
+            HostIP:        "127.0.0.1",
+            HostPort:      "9933",
+            ContainerPort: "9933",
+            Protocol:      "tcp",
+          },
+        },
+        CollectLogs: true,
+      },
+    }
+    ```
+
+    Let's try it:
+
+    ```
+    go build -o test main.go
+    bpm packages install test --from-file ./test
+    bpm nodes configure test --name a-test-node --subtype watcher
+    bpm nodes start a-test-node
+    ```
+
+    This should start a container called `bpm-a-test-node-polkadot`. We can check the status using `bpm`:
+
+    ```
+    bpm nodes status
+    ```
+
+    This concludes this tutorial. You now have a very simple but functional BPM package for running Polkadot.
+
+    ## Implementing a package for arbitrary deploy targets
+
+    BPM does not enforce deployment targets. While the bulk of packages deploy simple docker containers, it is entirely possible to deploy to other platforms. Examples could be Kubernetes, Systemd, etc.
+
+    The [BPM SDK](github.com/Blockdaemon/bpm-sdk) provides helper functions to create such a package using the Go programming language. The steps are:
+
+    1. Implement the [pugin interface](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/plugin#Plugin)
+    2. Call [initialize](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/plugin#Initialize) with an instance of the struct implementing said interface
+
+    # Package Contract
+
+    ## Overview
+
+    The following sections describe how the `bpm-cli` communicates with a bpm package. The [Go SDK](#section/Go-SDK) makes it easy to implement a package correctly so that it follows the contract described here.
+
+    Each package is a binary file that:
+
+    * Reads information from a configuration file (`node.json`)
+    * Provides a defined list of commands with specific behaviour
+
+    ## node.json
+
+    When a new node is launched, the `bpm-cli` creates a configuration file with parameters for this particular node.
+
+    ### nodes.json example
+
+    ```
+    {
+      "id": "broken-hill-8831",
+      "plugin": "parity",
+      "str_parameters": {
+        "bootnodes": "enode://8b1dfdfb02ebf4[...]5290624f86c11c5a3adf4991c8ded7@104.199.180.203:30303",
+        "chain-spec": "~/Downloads/chain.json"
+      },
+      "bool_parameters": {
+        "validator": true
+      },
+      "version": "1.0.0"
+    }
+    ```
+
+    ### node.json structure
+
+    | Field           | Description                                                                                         |
+    | --------------- | --------------------------------------------------------------------------------------------------- |
+    | id              | The node name                                                                                       |
+    | version         | The version of the package with which this node was created. This is important for upgrade purposes |
+    | str_parameters  | A dictionary containing parameter names and their values (strings)                                  |
+    | bool_parameters | A dictionary containing parameter names and their values (booleans)                                 |
+
+    ## Commands
+
+    Each package must implement the following commands:
+
+    | Command               | Description |
+    | --------------------- | ----------- |
+    | create-configurations | Creates the configurations for a blockchain node |
+    | meta                  | Shows meta information such as allowed parameters for this plugin |
+    | remove-config         | Removes the node configuration |
+    | remove-data           | Removes the node data |
+    | remove-runtime        | Removes everything related to the node itself but no data, identity or configs |:was
+    | start                 | Starts the node |
+    | status                | Gives information about the current node status |
+    | stop                  | Stops the node |
+    | validate-parameters   | Validates the parameters in the node file |
+
+    Each package may implement some of the following commands:
+
+    | Command               | Description |
+    | --------------------- | ----------- |
+    | create-identity       | Creates the nodes identity (e.g. private keys, certificates, etc.) |
+    | remove-identity       | Removes the node identity |
+    | upgrade               | Upgrades the node to a newer version of a package |
+    | test                  | Runs a test suite against the running node |
+
+    Non-mandatory commands may or may not be implemented in a bpm package. The `meta` command returns information about
+    the package, incl. information about which optional commands are available.
+
+    Except for the `meta` command (which is described in detail below), each of the commands above takes exactly one parameter which points to the node's `node.json`. Example:
+
+    ```
+    <package binary> create-configurations <node.json>
+    ```
+
+    The package commands must follow these rules:
+
+    * If something fails, the command must return an error code that is not 0
+    * Error messages must go to stderr
+    * Commands must be idempotent
+
+    > An operation is idempotent if the result of performing it once is exactly the same as the result of performing it repeatedly without any intervening actions. [[1]](https://docs.ansible.com/ansible/latest/reference_appendices/glossary.html)
+
+    This is typically implemented by first checking if an action has already been applied and only taking action if it hasn't. This has a few benefits:
+
+    - It allows manual intervention. Example: A user can supply their own node secret. If the file already exists, bpm will not re-create it
+    - Commands can be run multiple times without causing weird side effects
+    - Automation is easier because we don't need to save state (i.e. which commands where already executed)
+    - Implementing new plugins is simpler because one can just re-run the command while implementing it
+
+    ## meta
+
+    Every package needs to implement a `meta` command. This command returns information about the package in yaml format. This information is being used by the `bpm`.
+
+    ### meta example
+
+    ```
+    name: polkadot
+    version: 1.0.0
+    description: A polkadot package
+    protocol_version: 1.1.0
+    parameters:
+    - type: string
+      name: docker-network
+      description: If set, the node will be spun up in this docker network. The network
+        will be created automatically if it doesn't exist
+      mandatory: false
+      default: bpm
+    - type: string
+      name: subtype
+      description: The type of node. Must be either `watcher` or `validator`
+      mandatory: false
+      default: watcher
+    - type: string
+      name: validator-key
+      description: The key used for a validator (required if subtype = validator)
+      mandatory: false
+      default: ""
+    supported:
+    - test
+    - upgrade
+    ```
+
+    ### meta structure
+
+    | Field                  | Description |
+    | ---------------------- | ----------- |
+    | version                | The version of the package used to configure this node. This is useful to know when upgrading the node |
+    | description            | A human-readable description of the package |
+    | protocol_version       | A version denoting the protocol between `bpm` and the package (i.e. what is described in this document). Current version is `1.1.0`. |
+    | parameters             | A list of parameters that can be used during the `nodes configure <package>` command |
+    | parameters.type        | `string` or `bool` |
+    | parameters.name        | The name of the parameter, should use `-` to separate words |
+    | parameters.description | A human-readable description of the parameter |
+    | parameters.mandatory   | Whether the parameter is mandatory. If a parameter is mandatory, `bpm` will enforce that parameter. If not it will use the default value. |
+    | parameters.default     | The default value if no parameter is specified by the user |
+    | supported              | A list of supported methods |
+
+    `supported` describes which optional commands are implemented in the package according to the following table.
+
+    | String   | Commands                         |
+    | -------- | -------------------------------- |
+    | upgrade  | upgrade                          |
+    | test     | test                             |
+    | identity | create-identity, remove-identity |
+

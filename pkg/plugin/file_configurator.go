@@ -4,26 +4,28 @@ package plugin
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
 	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 	"github.com/Blockdaemon/bpm-sdk/pkg/template"
 )
 
+const (
+	// ConfigsDirectory is the subdirectory under the node directory where configs are saved
+	ConfigsDirectory = "configs"
+)
+
 // FileConfigurator creates configuration files from templates
 type FileConfigurator struct {
 	configFilesAndTemplates map[string]string
-	pluginParameters        []Parameter
 }
 
 // Configure creates configuration files for the blockchain client
 func (d FileConfigurator) Configure(currentNode node.Node) error {
-	if err := d.ValidateParameters(currentNode); err != nil {
-		return err
-	}
-
 	// Create config directory if it doesn't exist yet
-	_, err := fileutil.MakeDirectory(currentNode.ConfigsDirectory())
+	_, err := fileutil.MakeDirectory(currentNode.NodeDirectory(), ConfigsDirectory)
 	if err != nil {
 		return err
 	}
@@ -33,43 +35,16 @@ func (d FileConfigurator) Configure(currentNode node.Node) error {
 	})
 }
 
-// Removes configuration files related to the node
+// RemoveConfig removes configuration files related to the node
 func (d FileConfigurator) RemoveConfig(currentNode node.Node) error {
-	// Remove all configuration files
-	for file := range d.configFilesAndTemplates {
-		if err := template.ConfigFileAbsent(file, currentNode); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	identityPath := filepath.Join(currentNode.NodeDirectory(), ConfigsDirectory)
+	fmt.Printf("Removing directory %q\n", identityPath)
+	return os.RemoveAll(identityPath)
 }
 
-// ValidateParameters checks if all specified parameters are provided
-func (d FileConfigurator) ValidateParameters(currentNode node.Node) error {
-	for _, parameter := range d.pluginParameters {
-		ok := false
-
-		if parameter.Type == ParameterTypeBool {
-			_, ok = currentNode.BoolParameters[parameter.Name]
-		}
-
-		if parameter.Type == ParameterTypeString {
-			_, ok = currentNode.StrParameters[parameter.Name]
-
-		}
-
-		if !ok {
-			return fmt.Errorf(`%q missing`, parameter.Name)
-		}
-	}
-
-	return nil
-}
-
-func NewFileConfigurator(configFilesAndTemplates map[string]string, pluginParameters []Parameter) FileConfigurator {
+// NewFileConfigurator creates an instance of FileConfigurator
+func NewFileConfigurator(configFilesAndTemplates map[string]string) FileConfigurator {
 	return FileConfigurator{
 		configFilesAndTemplates: configFilesAndTemplates,
-		pluginParameters:        pluginParameters,
 	}
 }

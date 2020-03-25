@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"path/filepath"
 
 	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
@@ -79,15 +78,10 @@ func (c Node) NodeFile() string {
 	return c.nodeFile
 }
 
-// ConfigsDirectorys returns the directory under which all configuration for the blockchain client is stored
-func (c Node) ConfigsDirectory() string {
-	return path.Join(c.NodeDirectory(), "configs")
-}
-
 // Save the node data
 func (c Node) Save() error {
 	// Create node directories if they don't exist yet
-	_, err := fileutil.MakeDirectory(c.ConfigsDirectory())
+	_, err := fileutil.MakeDirectory(c.NodeDirectory())
 	if err != nil {
 		return err
 	}

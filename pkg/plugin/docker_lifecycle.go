@@ -7,11 +7,14 @@ import (
 	"context"
 	"io/ioutil"
 	"path"
+	"strings"
 	"text/template"
 	"time"
 
 	"github.com/Blockdaemon/bpm-sdk/pkg/docker"
+	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
 	"github.com/Blockdaemon/bpm-sdk/pkg/node"
+	sdktemplate "github.com/Blockdaemon/bpm-sdk/pkg/template"
 
 	homedir "github.com/mitchellh/go-homedir"
 )
@@ -22,18 +25,37 @@ type DockerLifecycleHandler struct {
 }
 
 const (
+	// LogsDirectory is the subdirectory under the node directory where logs are saved
+	LogsDirectory          = "logs"
 	filebeatContainerImage = "docker.elastic.co/beats/filebeat:7.4.1"
 	filebeatContainerName  = "filebeat"
 	filebeatConfigFile     = "filebeat.yml"
 	filebeatConfigTpl      = `filebeat.inputs:
 - type: container
-  paths: 
+  paths:
   - '/var/lib/docker/containers/*/*.log'
 fields:
-    node:
-        launch_type: bpm
-        xid: {{ .Node.ID }}
+  node:
+    project: development
+    protocol_type: {{ .Node.PluginName | ToUpper }}
+    user_id: bpm
+    xid: {{ .Node.ID }}
 fields_under_root: true
+processors:
+- add_docker_metadata: null
+- else.add_fields:
+    fields.log_type: system
+    target: ''
+  if.or:
+  {{- range $container := .PluginData.Containers }}
+    {{- if $container.CollectLogs }}
+  - equals.container.name: {{ $.Node.NamePrefix }}{{ $container.Name }}
+    {{- end }}
+  {{- end }}
+  then.add_fields:
+    fields.log_type: user
+    target: ''
+- drop_event.when.not.equals.log_type: user
 output:
 {{- if .Node.Collection.Host }}
     logstash:
@@ -48,16 +70,26 @@ output:
     console:
         pretty: true
 {{- end }}
+logging:
+  files:
+    rotateeverybytes: 10485760
 `
 )
 
+// NewDockerLifecycleHandler creates an instance of DockerLifecycleHandler
 func NewDockerLifecycleHandler(containers []docker.Container) DockerLifecycleHandler {
 	return DockerLifecycleHandler{containers: containers}
 }
 
 // Start starts monitoring agents and delegates to another function to start blockchain containers
 func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	client, err := docker.InitializeClient(currentNode)
+	if err != nil {
+		return err
+	}
+
+	// Create config directory if it doesn't exist yet
+	_, err = fileutil.MakeDirectory(currentNode.NodeDirectory(), LogsDirectory)
 	if err != nil {
 		return err
 	}
@@ -65,11 +97,9 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
-	// First, create the docker network(s) if they don't exist yet
-	for _, container := range d.containers {
-		if err := client.NetworkExists(ctx, container.NetworkID); err != nil {
-			return err
-		}
+	// First, create the docker network if it doesn't exist yet
+	if err := client.NetworkExists(ctx, currentNode.StrParameters["docker-network"]); err != nil {
+		return err
 	}
 
 	//////////////////////////////////////////////////////////////////////////////
@@ -91,12 +121,19 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 
 		// Render filebeat config file
 		outputFilename := path.Join(currentNode.NodeDirectory(), filebeatConfigFile)
-		tmpl, err := template.New(outputFilename).Parse(filebeatConfigTpl)
+		funcMap := template.FuncMap{
+			"ToUpper": strings.ToUpper,
+		}
+		tmpl, err := template.New(outputFilename).Funcs(funcMap).Parse(filebeatConfigTpl)
 		if err != nil {
 			return err
 		}
+		templateData := sdktemplate.TemplateData{
+			Node:       currentNode,
+			PluginData: map[string]interface{}{"Containers": d.containers},
+		}
 		output := bytes.NewBufferString("")
-		err = tmpl.Execute(output, currentNode)
+		err = tmpl.Execute(output, templateData)
 		if err != nil {
 			return err
 		}
@@ -110,7 +147,6 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 			Image: filebeatContainerImage,
 			Cmd:   []string{"-e", "-strict.perms=false"},
 			// using the first containers network is a decent default, if we ever do mult-network deployments we may need to rethink this
-			NetworkID: d.containers[0].NetworkID,
 			Mounts: []docker.Mount{
 				{
 					Type: "bind",
@@ -137,6 +173,11 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 					From: currentNode.Collection.Key,
 					To:   "/etc/ssl/beats/beat.key",
 				},
+				{
+					Type: "bind",
+					From: "/var/run/docker.sock",
+					To:   "/var/run/docker.sock",
+				},
 			},
 			User: "root",
 		}
@@ -159,9 +200,9 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 	return nil
 }
 
-// DockerStatus returns the status of the running blockchain client and monitoring containers
+// Status returns the status of the running blockchain client and monitoring containers
 func (d DockerLifecycleHandler) Status(currentNode node.Node) (string, error) {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	client, err := docker.InitializeClient(currentNode)
 	if err != nil {
 		return "", err
 	}
@@ -190,9 +231,9 @@ func (d DockerLifecycleHandler) Status(currentNode node.Node) (string, error) {
 	return "incomplete", nil
 }
 
-// DockerStop removes all containers
+// Stop removes all containers
 func (d DockerLifecycleHandler) Stop(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	client, err := docker.InitializeClient(currentNode)
 	if err != nil {
 		return err
 	}
@@ -201,17 +242,31 @@ func (d DockerLifecycleHandler) Stop(currentNode node.Node) error {
 	defer cancel()
 
 	for _, container := range d.containers {
-		if err = client.ContainerStopped(ctx, container.Name, container.NetworkID); err != nil {
+		if err = client.ContainerStopped(ctx, container); err != nil {
 			return err
 		}
 	}
 
+	//////////////////////////////////////////////////////////////////////////////
+	// TODO: This is just temporarily until we have a proper authentication system
+	//////////////////////////////////////////////////////////////////////////////
+	filebeatContainer := docker.Container{
+		Name: filebeatContainerName,
+	}
+
+	if err = client.ContainerStopped(ctx, filebeatContainer); err != nil {
+		return err
+	}
+	//////////////////////////////////////////////////////////////////////////////
+	// TODO end
+	//////////////////////////////////////////////////////////////////////////////
+
 	return nil
 }
 
-// Removes any data (typically the blockchain itself) related to the node
+// RemoveData removes any data (typically the blockchain itself) related to the node
 func (d DockerLifecycleHandler) RemoveData(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	client, err := docker.InitializeClient(currentNode)
 	if err != nil {
 		return err
 	}
@@ -232,9 +287,9 @@ func (d DockerLifecycleHandler) RemoveData(currentNode node.Node) error {
 	return nil
 }
 
-// Removes the docker network and containers
+// RemoveRuntime removes the docker network and containers
 func (d DockerLifecycleHandler) RemoveRuntime(currentNode node.Node) error {
-	client, err := docker.NewBasicManager(currentNode.NamePrefix(), currentNode.ConfigsDirectory())
+	client, err := docker.InitializeClient(currentNode)
 	if err != nil {
 		return err
 	}
@@ -243,17 +298,24 @@ func (d DockerLifecycleHandler) RemoveRuntime(currentNode node.Node) error {
 	defer cancel()
 
 	for _, container := range d.containers {
-		if err = client.ContainerAbsent(ctx, container.Name, container.NetworkID); err != nil {
+		if err = client.ContainerAbsent(ctx, container); err != nil {
 			return err
 		}
 	}
 
-	// Remove network(s)
-	for _, container := range d.containers {
-		if err := client.NetworkAbsent(ctx, container.NetworkID); err != nil {
-			return err
-		}
+	//////////////////////////////////////////////////////////////////////////////
+	// TODO: This is just temporarily until we have a proper authentication system
+	//////////////////////////////////////////////////////////////////////////////
+	filebeatContainer := docker.Container{
+		Name: filebeatContainerName,
 	}
+
+	if err = client.ContainerAbsent(ctx, filebeatContainer); err != nil {
+		return err
+	}
+	//////////////////////////////////////////////////////////////////////////////
+	// TODO end
+	//////////////////////////////////////////////////////////////////////////////
 
 	return nil
 }
