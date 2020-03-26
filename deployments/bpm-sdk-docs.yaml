@@ -4,12 +4,12 @@ kind: Service
 metadata:
   name: bpm-sdk-docs-svc
 spec:
-  type: NodePort
+  type: LoadBalancer
   selector:
     app: bpm-sdk-docs
   ports:
   - port: 80
-    nodePort: 31320
+    targetPort: 80
 ---
 apiVersion: apps/v1
 kind: Deployment
