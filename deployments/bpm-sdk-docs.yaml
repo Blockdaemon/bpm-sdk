@@ -30,4 +30,4 @@ spec:
           image: redocly/redoc:latest
           env:
             - name: "SPEC_URL"
-              value: "https://raw.githubusercontent.com/Blockdaemon/bpm-sdk/automation/swagger.yaml"
+              value: "https://bd-docs.nyc3.cdn.digitaloceanspaces.com/bpm-sdk-swagger.yaml"
