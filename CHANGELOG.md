@@ -4,6 +4,10 @@ New functionality:
 
 * Add node.Remove method for removing nodes (from the cli)
 
+Bug fixes:
+
+* Always remove transient containers, even if they fail
+
 # 0.10.0
 
 New functionality:
