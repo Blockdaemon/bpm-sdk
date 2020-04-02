@@ -77,7 +77,8 @@ func (bm *BasicManager) prefixedName(name string) string {
 	return bm.prefix + name
 }
 
-func (bm *BasicManager) addBasePath(myPath string) string {
+// AddBasePath adds the base path if the supplied path is relative
+func (bm *BasicManager) AddBasePath(myPath string) string {
 	if strings.HasPrefix(myPath, "/") {
 		// absolute path, just return as is
 		return myPath
@@ -438,7 +439,7 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 	var err error
 
 	if container.EnvFilename != "" {
-		envs, err = readLines(bm.addBasePath(container.EnvFilename))
+		envs, err = readLines(bm.AddBasePath(container.EnvFilename))
 		if err != nil {
 			return err
 		}
@@ -470,7 +471,7 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 
 		from := ""
 		if mountParam.Type == "bind" {
-			from = bm.addBasePath(mountParam.From)
+			from = bm.AddBasePath(mountParam.From)
 		} else { // volume
 			from = bm.prefixedName(mountParam.From)
 		}
@@ -512,7 +513,7 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 	if len(container.Cmd) > 0 {
 		cmd = container.Cmd
 	} else if len(container.CmdFile) > 0 {
-		cmdFileContent, err := ioutil.ReadFile(bm.addBasePath(container.CmdFile))
+		cmdFileContent, err := ioutil.ReadFile(bm.AddBasePath(container.CmdFile))
 		if err != nil {
 			return err
 		}

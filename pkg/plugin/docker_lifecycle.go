@@ -5,7 +5,9 @@ package plugin
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io/ioutil"
+	"os"
 	"path"
 	"strings"
 	"text/template"
@@ -88,8 +90,14 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 		return err
 	}
 
-	// Create config directory if it doesn't exist yet
+	// Create logs directory if it doesn't exist yet
 	_, err = fileutil.MakeDirectory(currentNode.NodeDirectory(), LogsDirectory)
+	if err != nil {
+		return err
+	}
+
+	// Create data directory if it doesn't exist yet
+	_, err = fileutil.MakeDirectory(client.AddBasePath(currentNode.StrParameters["data-dir"]))
 	if err != nil {
 		return err
 	}
@@ -291,6 +299,10 @@ func (d DockerLifecycleHandler) RemoveData(currentNode node.Node) error {
 			}
 		}
 	}
+
+	dataDir := client.AddBasePath(currentNode.StrParameters["data-dir"])
+	fmt.Printf("Removing directory %q\n", dataDir)
+	os.RemoveAll(dataDir)
 
 	return nil
 }
