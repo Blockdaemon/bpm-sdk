@@ -335,6 +335,13 @@ func (bm *BasicManager) RunTransientContainer(ctx context.Context, container Con
 		fmt.Printf("Container '%s' already runs, skipping start\n", prefixedName)
 	}
 
+	defer func() {
+		// Removing the container after it's done
+		if err := bm.ContainerAbsent(ctx, container); err != nil {
+			panic(err)
+		}
+	}()
+
 	status, err := bm.cli.ContainerWait(ctx, prefixedName)
 	if err != nil {
 		return "", err
@@ -354,11 +361,6 @@ func (bm *BasicManager) RunTransientContainer(ctx context.Context, container Con
 
 	if status != 0 {
 		return outputStr, fmt.Errorf("Container '%s' failed with status code: %d", prefixedName, status)
-	}
-
-	// Removing the container after it's done
-	if err := bm.ContainerAbsent(ctx, container); err != nil {
-		return outputStr, err
 	}
 
 	return outputStr, nil
