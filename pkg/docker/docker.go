@@ -143,11 +143,6 @@ func (bm *BasicManager) ContainerStopped(ctx context.Context, container Containe
 		if err := bm.cli.ContainerStop(ctx, prefixedName, nil); err != nil {
 			return err
 		}
-
-		fmt.Printf("Disconnecting container '%s' from network\n", prefixedName)
-		if err := bm.cli.NetworkDisconnect(ctx, bm.networkID, prefixedName, false); err != nil {
-			return err
-		}
 	} else {
 		fmt.Printf("Container '%s' is not running, skipping stop\n", prefixedName)
 	}
@@ -155,7 +150,7 @@ func (bm *BasicManager) ContainerStopped(ctx context.Context, container Containe
 	return nil
 }
 
-// ContainerAbset stops and removes a container if it is running/exists
+// ContainerAbsent stops and removes a container if it is running/exists
 func (bm *BasicManager) ContainerAbsent(ctx context.Context, container Container) error {
 	prefixedName := bm.prefixedName(container.Name)
 

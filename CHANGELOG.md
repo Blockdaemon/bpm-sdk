@@ -4,6 +4,10 @@ New functionality:
 
 * Add node.Remove method for removing nodes (from the cli)
 
+Bug fixes:
+
+* Stopped & started containers are now still connected to the correct docker network  
+
 # 0.10.0
 
 New functionality:
