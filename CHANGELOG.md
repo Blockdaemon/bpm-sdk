@@ -6,7 +6,7 @@ New functionality:
 
 Bug fixes:
 
-* Always remove transient containers, even if they fail
+* Stopped & started containers are now still connected to the correct docker network  
 
 # 0.10.0
 
