@@ -210,6 +210,14 @@ func (d DockerLifecycleHandler) Status(currentNode node.Node) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
 
+	exists, err := client.DoesNetworkExist(ctx, currentNode.StrParameters["docker-network"])
+	if err != nil {
+		return "", err
+	}
+	if !exists {
+		return "incomplete", nil
+	}
+
 	containersRunning := 0
 
 	for _, container := range d.containers {

@@ -183,7 +183,7 @@ func (bm *BasicManager) ContainerAbsent(ctx context.Context, container Container
 
 // NetworkAbsent removes a network if it exists
 func (bm *BasicManager) NetworkAbsent(ctx context.Context, networkID string) error {
-	exists, err := bm.doesNetworkExist(ctx, networkID)
+	exists, err := bm.DoesNetworkExist(ctx, networkID)
 	if err != nil {
 		return err
 	}
@@ -217,7 +217,7 @@ func (bm *BasicManager) VolumeAbsent(ctx context.Context, volumeID string) error
 
 // NetworkExists creates a network if it doesn't exist yet
 func (bm *BasicManager) NetworkExists(ctx context.Context, networkID string) error {
-	exists, err := bm.doesNetworkExist(ctx, networkID)
+	exists, err := bm.DoesNetworkExist(ctx, networkID)
 	if err != nil {
 		return err
 	}
@@ -382,7 +382,8 @@ func (bm *BasicManager) doesContainerExist(ctx context.Context, containerName st
 	return true, nil
 }
 
-func (bm *BasicManager) doesNetworkExist(ctx context.Context, networkID string) (bool, error) {
+// DoesNetworkExist returns true if the docker network exists
+func (bm *BasicManager) DoesNetworkExist(ctx context.Context, networkID string) (bool, error) {
 	_, err := bm.cli.NetworkInspect(ctx, networkID)
 	if err != nil {
 		if client.IsErrNetworkNotFound(err) {

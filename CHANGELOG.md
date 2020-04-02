@@ -1,3 +1,9 @@
+# 0.11.0
+
+New functionality:
+
+* `status` call in docker based plugins now checks if the docker network exists. Previously it just crashed. 
+
 # 0.10.0
 
 New functionality:
