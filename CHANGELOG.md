@@ -3,6 +3,7 @@
 New functionality:
 
 * Add node.Remove method for removing nodes (from the cli)
+* Docker plugins have by default a new parameter `--data-dir` that can be used to specify where to put the node data
 
 # 0.10.0
 

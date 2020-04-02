@@ -54,6 +54,13 @@ func NewDockerPlugin(name string, version string, description string, parameters
 			Mandatory:   false,
 			Default:     "bpm",
 		},
+		{
+			Name:        "data-dir",
+			Type:        ParameterTypeString,
+			Description: "The directory under which the nodes data will be saved. Values that do not start with '/' will be relative to the node directory",
+			Mandatory:   false,
+			Default:     "data",
+		},
 	}
 
 	meta := MetaInfo{
