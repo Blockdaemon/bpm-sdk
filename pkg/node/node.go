@@ -98,6 +98,12 @@ func (c Node) Save() error {
 	)
 }
 
+// Remove removes a node by deleting the node directory
+func (c Node) Remove() error {
+	return os.RemoveAll(c.NodeDirectory())
+}
+
+// New initializes a new instance of Node
 func New(nodeFile string) Node {
 	return Node{nodeFile: nodeFile}
 }

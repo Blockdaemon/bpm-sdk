@@ -2,7 +2,7 @@
 
 New functionality:
 
-* `status` call in docker based plugins now checks if the docker network exists. Previously it just crashed. 
+* Add node.Remove method for removing nodes (from the cli)
 
 # 0.10.0
 
