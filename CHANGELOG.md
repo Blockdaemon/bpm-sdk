@@ -1,3 +1,9 @@
+# 0.11.0
+
+New functionality:
+
+* Add node.Remove method for removing nodes (from the cli)
+
 # 0.10.0
 
 New functionality:
