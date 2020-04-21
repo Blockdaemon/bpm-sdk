@@ -1,3 +1,7 @@
+# ?.?.?
+
+* Handle error when deleting node data
+
 # 0.12.0 
 
 New functionality:

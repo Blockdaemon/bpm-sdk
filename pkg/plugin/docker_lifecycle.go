@@ -302,9 +302,8 @@ func (d DockerLifecycleHandler) RemoveData(currentNode node.Node) error {
 
 	dataDir := client.AddBasePath(currentNode.StrParameters["data-dir"])
 	fmt.Printf("Removing directory %q\n", dataDir)
-	os.RemoveAll(dataDir)
 
-	return nil
+	return os.RemoveAll(dataDir)
 }
 
 // RemoveRuntime removes the docker network and containers
