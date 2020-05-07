@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 	"github.com/spf13/cobra"
 	"github.com/thoas/go-funk"
+	"go.blockdaemon.com/bpm/sdk/pkg/node"
 )
 
 // ParameterValidator provides a function to validate the node parameters

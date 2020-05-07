@@ -12,8 +12,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
 	homedir "github.com/mitchellh/go-homedir"
+	"go.blockdaemon.com/bpm/sdk/pkg/fileutil"
 )
 
 // Node represents a blockchain node, it's configuration and related information

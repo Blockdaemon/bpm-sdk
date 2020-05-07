@@ -1,5 +1,6 @@
 # ?.?.?
 
+* Changed project location to `go.blockdaemon.com/bpm/sdk` which redirects to the actual repository
 * Handle error when deleting node data
 
 # 0.12.0 

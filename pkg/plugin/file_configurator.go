@@ -7,9 +7,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
-	"github.com/Blockdaemon/bpm-sdk/pkg/node"
-	"github.com/Blockdaemon/bpm-sdk/pkg/template"
+	"go.blockdaemon.com/bpm/sdk/pkg/fileutil"
+	"go.blockdaemon.com/bpm/sdk/pkg/node"
+	"go.blockdaemon.com/bpm/sdk/pkg/template"
 )
 
 const (

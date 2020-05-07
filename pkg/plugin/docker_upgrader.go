@@ -6,8 +6,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/Blockdaemon/bpm-sdk/pkg/docker"
-	"github.com/Blockdaemon/bpm-sdk/pkg/node"
+	"go.blockdaemon.com/bpm/sdk/pkg/docker"
+	"go.blockdaemon.com/bpm/sdk/pkg/node"
 )
 
 // DockerUpgrader provides a default strategy for upgrading docker based nodes

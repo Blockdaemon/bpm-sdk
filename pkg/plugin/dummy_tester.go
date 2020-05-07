@@ -1,7 +1,7 @@
 package plugin
 
 import (
-	"github.com/Blockdaemon/bpm-sdk/pkg/node"
+	"go.blockdaemon.com/bpm/sdk/pkg/node"
 )
 
 // DummyTester does nothing except panicking

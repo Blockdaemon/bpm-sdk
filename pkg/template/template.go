@@ -9,8 +9,8 @@ import (
 	"path"
 	"text/template"
 
-	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
-	"github.com/Blockdaemon/bpm-sdk/pkg/node"
+	"go.blockdaemon.com/bpm/sdk/pkg/fileutil"
+	"go.blockdaemon.com/bpm/sdk/pkg/node"
 )
 
 // TemplateData wraps the data send to the rendering engine
