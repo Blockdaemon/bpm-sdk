@@ -24,7 +24,6 @@ import (
 	"path"
 	"strings"
 
-	"github.com/Blockdaemon/bpm-sdk/pkg/node"
 	"github.com/docker/docker/api/types"
 	dockercontainer "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
@@ -32,6 +31,7 @@ import (
 	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"go.blockdaemon.com/bpm/sdk/pkg/node"
 )
 
 type BasicManager struct {

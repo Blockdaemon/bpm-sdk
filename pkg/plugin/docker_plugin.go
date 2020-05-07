@@ -1,7 +1,7 @@
 package plugin
 
 import (
-	"github.com/Blockdaemon/bpm-sdk/pkg/docker"
+	"go.blockdaemon.com/bpm/sdk/pkg/docker"
 )
 
 // DockerPlugin is an implementation of the Plugin interface. It provides based functionality for a docker based plugin

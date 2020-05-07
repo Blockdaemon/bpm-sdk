@@ -1,4 +1,4 @@
-module github.com/Blockdaemon/bpm-sdk
+module go.blockdaemon.com/bpm/sdk
 
 go 1.12
 

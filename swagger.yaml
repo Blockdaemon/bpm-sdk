@@ -121,7 +121,7 @@ info:
 
     # Go SDK
 
-    The BPM SDK makes it easy to implement new packages using the Go programming language. Find the sourcecode at [Github](https://github.com/Blockdaemon/bpm-sdk).
+    The BPM SDK makes it easy to implement new packages using the Go programming language. Find the sourcecode at [Github](https://go.blockdaemon.com/bpm/sdk).
 
     ## SDK Components
 
@@ -129,25 +129,25 @@ info:
 
     Package docker provides a simple docker abstraction layer that makes it very easy to start and remove docker containers, networks and volumes.
 
-    For more information please refer to the [API documentation](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/docker).
+    For more information please refer to the [API documentation](https://godoc.org/go.blockdaemon.com/bpm/sdk/pkg/docker).
 
     ### node
 
     Package node provides an easy way to access node related information.
 
-    For more information please refer to the [API documentation](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/node).
+    For more information please refer to the [API documentation](https://godoc.org/go.blockdaemon.com/bpm/sdk/pkg/node).
 
     ### template
 
     Package template implements functions to render Go templates to files using the node.Node struct as an imnput for the templates.
 
-    For more information please refer to the [API documentation](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/template).
+    For more information please refer to the [API documentation](https://godoc.org/go.blockdaemon.com/bpm/sdk/pkg/template).
 
     ### plugin
 
     Package plugin provides an easy way to create the required CLI for a plugin. It abstracts away all the command line and file parsing so users just need to implement the actual logic.
 
-    For more information please refer to the [API documentation](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/plugin).
+    For more information please refer to the [API documentation](https://godoc.org/go.blockdaemon.com/bpm/sdk/pkg/plugin).
 
     ## Implementing a package for docker deploy
 
@@ -166,8 +166,8 @@ info:
     package main
 
     import (
-      "github.com/Blockdaemon/bpm-sdk/pkg/docker"
-      "github.com/Blockdaemon/bpm-sdk/pkg/plugin"
+      "go.blockdaemon.com/bpm/sdk/pkg/docker"
+      "go.blockdaemon.com/bpm/sdk/pkg/plugin"
     )
 
     func main() {
@@ -391,10 +391,10 @@ info:
 
     BPM does not enforce deployment targets. While the bulk of packages deploy simple docker containers, it is entirely possible to deploy to other platforms. Examples could be Kubernetes, Systemd, etc.
 
-    The [BPM SDK](github.com/Blockdaemon/bpm-sdk) provides helper functions to create such a package using the Go programming language. The steps are:
+    The [BPM SDK](go.blockdaemon.com/bpm/sdk) provides helper functions to create such a package using the Go programming language. The steps are:
 
-    1. Implement the [pugin interface](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/plugin#Plugin)
-    2. Call [initialize](https://godoc.org/github.com/Blockdaemon/bpm-sdk/pkg/plugin#Initialize) with an instance of the struct implementing said interface
+    1. Implement the [pugin interface](https://godoc.org/go.blockdaemon.com/bpm/sdk/pkg/plugin#Plugin)
+    2. Call [initialize](https://godoc.org/go.blockdaemon.com/bpm/sdk/pkg/plugin#Initialize) with an instance of the struct implementing said interface
 
     # Package Contract
 

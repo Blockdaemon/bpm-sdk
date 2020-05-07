@@ -3,7 +3,7 @@ package plugin
 import (
 	"fmt"
 
-	"github.com/Blockdaemon/bpm-sdk/pkg/node"
+	"go.blockdaemon.com/bpm/sdk/pkg/node"
 )
 
 // SimpleParameterValidator is a simple validator

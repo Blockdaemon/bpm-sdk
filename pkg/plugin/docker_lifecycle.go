@@ -13,10 +13,10 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/Blockdaemon/bpm-sdk/pkg/docker"
-	"github.com/Blockdaemon/bpm-sdk/pkg/fileutil"
-	"github.com/Blockdaemon/bpm-sdk/pkg/node"
-	sdktemplate "github.com/Blockdaemon/bpm-sdk/pkg/template"
+	"go.blockdaemon.com/bpm/sdk/pkg/docker"
+	"go.blockdaemon.com/bpm/sdk/pkg/fileutil"
+	"go.blockdaemon.com/bpm/sdk/pkg/node"
+	sdktemplate "go.blockdaemon.com/bpm/sdk/pkg/template"
 
 	homedir "github.com/mitchellh/go-homedir"
 )
