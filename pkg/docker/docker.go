@@ -253,6 +253,7 @@ type Container struct {
 	Ports       []Port
 	Cmd         []string
 	CmdFile     string
+	Restart     string
 	User        string
 	CollectLogs bool
 }
@@ -483,12 +484,17 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 		})
 	}
 
+	// default restart
+	if container.Restart == "" {
+		container.Restart = "unless-stopped"
+	}
+
 	// Host config
 	hostCfg := &dockercontainer.HostConfig{
 		Mounts:       mounts,
 		PortBindings: portBindings,
 		RestartPolicy: dockercontainer.RestartPolicy{
-			Name: "unless-stopped",
+			Name: container.Restart,
 		},
 		LogConfig: dockercontainer.LogConfig{
 			Type: "json-file",
