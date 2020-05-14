@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -17,8 +18,6 @@ import (
 	"go.blockdaemon.com/bpm/sdk/pkg/fileutil"
 	"go.blockdaemon.com/bpm/sdk/pkg/node"
 	sdktemplate "go.blockdaemon.com/bpm/sdk/pkg/template"
-
-	homedir "github.com/mitchellh/go-homedir"
 )
 
 // DockerLifecycleHandler provides functions to manage a node using plain docker containers
@@ -32,7 +31,7 @@ const (
 	filebeatContainerImage = "docker.elastic.co/beats/filebeat:7.4.1"
 	filebeatContainerName  = "filebeat"
 	filebeatConfigFile     = "filebeat.yml"
-	filebeatConfigTpl      = `filebeat.inputs:
+	filebeatBaseConfigTpl  = `filebeat.inputs:
 - type: container
   paths:
   - '/var/lib/docker/containers/*/*.log'
@@ -45,6 +44,7 @@ fields:
 fields_under_root: true
 processors:
 - add_docker_metadata: null
+{{- if .PluginData.Containers }}
 - else.add_fields:
     fields.log_type: system
     target: ''
@@ -57,24 +57,12 @@ processors:
   then.add_fields:
     fields.log_type: user
     target: ''
-- drop_event.when.not.equals.log_type: user
-output:
-{{- if .Node.Collection.Host }}
-    logstash:
-        hosts:
-        - "{{ .Node.Collection.Host }}"
-        ssl:
-            certificate: /etc/ssl/beats/beat.crt
-            certificate_authorities:
-            - /etc/ssl/beats/ca.crt
-            key: /etc/ssl/beats/beat.key
-{{- else }}
-    console:
-        pretty: true
 {{- end }}
-logging:
-  files:
-    rotateeverybytes: 10485760
+- drop_event.when.not.equals.log_type: user
+`
+	filebeatConsoleConfigTpl = `output:
+  console:
+    pretty: true
 `
 )
 
@@ -83,8 +71,57 @@ func NewDockerLifecycleHandler(containers []docker.Container) DockerLifecycleHan
 	return DockerLifecycleHandler{containers: containers}
 }
 
-// Start starts monitoring agents and delegates to another function to start blockchain containers
-func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
+// renderMonitoringConfig renders the configuration file for filebeat
+//
+// We can run either with monitoring forwarding enabled or disabled:
+//
+// - If disabled we just use the base config and add a console output to it
+// - If enabled (via --monitoring-pack) we extract the monitoring pack which contains a filebeat output and combine it with the base config
+func (d DockerLifecycleHandler) renderMonitoringConfig(monitoringPath string, currentNode node.Node) error {
+	filebeatConfigTpl := ""
+
+	if currentNode.StrParameters["monitoring-pack"] == "" {
+		fmt.Println("Forwarding of monitoring is disabled. Specify `--monitoring-pack` to enable it.")
+		// Instead of forwarding we'll just create filebeat with a simple log output
+		filebeatConfigTpl = filebeatBaseConfigTpl + "\n" + filebeatConsoleConfigTpl
+	} else {
+		fmt.Println("Enabling forwarding of monitoring data.")
+
+		if err := fileutil.ExtractTarGz(currentNode.StrParameters["monitoring-pack"], monitoringPath); err != nil {
+			return err
+		}
+
+		monitoringPackConfig, err := ioutil.ReadFile(filepath.Join(monitoringPath, "config.tpl"))
+		if err != nil {
+			return err
+		}
+		filebeatConfigTpl = filebeatBaseConfigTpl + "\n" + string(monitoringPackConfig)
+	}
+
+	// Render filebeat config
+	outputFilename := path.Join(currentNode.NodeDirectory(), "monitoring", filebeatConfigFile)
+	funcMap := template.FuncMap{
+		"ToUpper": strings.ToUpper,
+	}
+	tmpl, err := template.New(outputFilename).Funcs(funcMap).Parse(filebeatConfigTpl)
+	if err != nil {
+		return err
+	}
+	templateData := sdktemplate.TemplateData{
+		Node:       currentNode,
+		PluginData: map[string]interface{}{"Containers": d.containers},
+	}
+	output := bytes.NewBufferString("")
+	err = tmpl.Execute(output, templateData)
+	if err != nil {
+		return err
+	}
+
+	return ioutil.WriteFile(outputFilename, output.Bytes(), 0644)
+}
+
+// SetUpEnvironment configures the monitoring agents
+func (d DockerLifecycleHandler) SetUpEnvironment(currentNode node.Node) error {
 	client, err := docker.NewBasicManager(currentNode)
 	if err != nil {
 		return err
@@ -102,103 +139,79 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
 	defer cancel()
 
-	// First, create the docker network if it doesn't exist yet
+	// Create the docker network if it doesn't exist yet
 	if err := client.NetworkExists(ctx, currentNode.StrParameters["docker-network"]); err != nil {
 		return err
 	}
 
-	//////////////////////////////////////////////////////////////////////////////
-	// TODO: This is just temporarily until we have a proper authentication system
-	//////////////////////////////////////////////////////////////////////////////
-	if currentNode.Collection.Host != "" {
-		currentNode.Collection.Key, err = homedir.Expand(currentNode.Collection.Key)
-		if err != nil {
-			return err
-		}
-		currentNode.Collection.Cert, err = homedir.Expand(currentNode.Collection.Cert)
-		if err != nil {
-			return err
-		}
-		currentNode.Collection.CA, err = homedir.Expand(currentNode.Collection.CA)
-		if err != nil {
-			return err
-		}
-
-		// Render filebeat config file
-		outputFilename := path.Join(currentNode.NodeDirectory(), filebeatConfigFile)
-		funcMap := template.FuncMap{
-			"ToUpper": strings.ToUpper,
-		}
-		tmpl, err := template.New(outputFilename).Funcs(funcMap).Parse(filebeatConfigTpl)
-		if err != nil {
-			return err
-		}
-		templateData := sdktemplate.TemplateData{
-			Node:       currentNode,
-			PluginData: map[string]interface{}{"Containers": d.containers},
-		}
-		output := bytes.NewBufferString("")
-		err = tmpl.Execute(output, templateData)
-		if err != nil {
-			return err
-		}
-		if err := ioutil.WriteFile(outputFilename, output.Bytes(), 0644); err != nil {
-			return err
-		}
-
-		// Start filebeat container
-		filebeatContainer := docker.Container{
-			Name:  filebeatContainerName,
-			Image: filebeatContainerImage,
-			Cmd:   []string{"-e", "-strict.perms=false"},
-			// using the first containers network is a decent default, if we ever do mult-network deployments we may need to rethink this
-			Mounts: []docker.Mount{
-				{
-					Type: "bind",
-					From: outputFilename,
-					To:   "/usr/share/filebeat/filebeat.yml",
-				},
-				{
-					Type: "bind",
-					From: "/var/lib/docker/containers",
-					To:   "/var/lib/docker/containers",
-				},
-				{
-					Type: "bind",
-					From: currentNode.Collection.CA,
-					To:   "/etc/ssl/beats/ca.crt",
-				},
-				{
-					Type: "bind",
-					From: currentNode.Collection.Cert,
-					To:   "/etc/ssl/beats/beat.crt",
-				},
-				{
-					Type: "bind",
-					From: currentNode.Collection.Key,
-					To:   "/etc/ssl/beats/beat.key",
-				},
-				{
-					Type: "bind",
-					From: "/var/run/docker.sock",
-					To:   "/var/run/docker.sock",
-				},
-			},
-			User: "root",
-		}
-
-		if err := client.ContainerRuns(ctx, filebeatContainer); err != nil {
-			return err
-		}
+	// Create monitoring directory
+	monitoringPath := client.AddBasePath("monitoring")
+	_, err = fileutil.MakeDirectory(monitoringPath)
+	if err != nil {
+		return err
 	}
-	//////////////////////////////////////////////////////////////////////////////
-	// TODO end
-	//////////////////////////////////////////////////////////////////////////////
 
-	// Next, start the containers
+	// Render the config
+	return d.renderMonitoringConfig(monitoringPath, currentNode)
+}
+
+// TearDownEnvironment is currently just a placeholder that does nothing
+func (d DockerLifecycleHandler) TearDownEnvironment(currentNode node.Node) error {
+	return nil
+}
+
+// Start starts monitoring agents and delegates to another function to start blockchain containers
+func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
+	client, err := docker.NewBasicManager(currentNode)
+	if err != nil {
+		return err
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+
+	monitoringPath := client.AddBasePath("monitoring")
+	filebeatCombinedConfigPath := client.AddBasePath(path.Join("monitoring", filebeatConfigFile))
+
+	// Start filebeat container
+	filebeatContainer := docker.Container{
+		Name:  filebeatContainerName,
+		Image: filebeatContainerImage,
+		Cmd:   []string{"-e", "-strict.perms=false"},
+		// using the first containers network is a decent default, if we ever do mult-network deployments we may need to rethink this
+		Mounts: []docker.Mount{
+			{
+				Type: "bind",
+				From: filebeatCombinedConfigPath,
+				To:   "/usr/share/filebeat/filebeat.yml",
+			},
+			{
+				Type: "bind",
+				From: "/var/lib/docker/containers",
+				To:   "/var/lib/docker/containers",
+			},
+			{
+				Type: "bind",
+				From: monitoringPath,
+				To:   "/monitoring",
+			},
+			{
+				Type: "bind",
+				From: "/var/run/docker.sock",
+				To:   "/var/run/docker.sock",
+			},
+		},
+		User: "root",
+	}
+
+	if err := client.ContainerRuns(ctx, filebeatContainer); err != nil {
+		return err
+	}
+
+	// Next, start the node containers
 	for _, container := range d.containers {
 		if err := client.ContainerRuns(ctx, container); err != nil {
 			return err
@@ -263,9 +276,6 @@ func (d DockerLifecycleHandler) Stop(currentNode node.Node) error {
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////////
-	// TODO: This is just temporarily until we have a proper authentication system
-	//////////////////////////////////////////////////////////////////////////////
 	filebeatContainer := docker.Container{
 		Name: filebeatContainerName,
 	}
@@ -273,9 +283,6 @@ func (d DockerLifecycleHandler) Stop(currentNode node.Node) error {
 	if err = client.ContainerStopped(ctx, filebeatContainer); err != nil {
 		return err
 	}
-	//////////////////////////////////////////////////////////////////////////////
-	// TODO end
-	//////////////////////////////////////////////////////////////////////////////
 
 	return nil
 }
@@ -322,9 +329,6 @@ func (d DockerLifecycleHandler) RemoveRuntime(currentNode node.Node) error {
 		}
 	}
 
-	//////////////////////////////////////////////////////////////////////////////
-	// TODO: This is just temporarily until we have a proper authentication system
-	//////////////////////////////////////////////////////////////////////////////
 	filebeatContainer := docker.Container{
 		Name: filebeatContainerName,
 	}
@@ -332,9 +336,6 @@ func (d DockerLifecycleHandler) RemoveRuntime(currentNode node.Node) error {
 	if err = client.ContainerAbsent(ctx, filebeatContainer); err != nil {
 		return err
 	}
-	//////////////////////////////////////////////////////////////////////////////
-	// TODO end
-	//////////////////////////////////////////////////////////////////////////////
 
 	return nil
 }

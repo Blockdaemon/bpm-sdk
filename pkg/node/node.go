@@ -32,23 +32,12 @@ type Node struct {
 	// Dynamic bool parameters
 	BoolParameters map[string]bool `json:"bool_parameters"`
 
-	// Describes the collection configuration
-	Collection Collection `json:"collection"`
-
 	// Holding place for data that is generated at runtime. E.g. can be used to store data parsed from the parameters
 	Data map[string]interface{} `json:"-"` // No json here, runtime data only
 
 	// The package version used to install this node (if installed yet)
 	// This is useful to know in order to run migrations on upgrades.
 	Version string `json:"version"`
-}
-
-// Collection is config for log and node data collection
-type Collection struct {
-	CA   string `json:"ca"`
-	Cert string `json:"cert"`
-	Host string `json:"host"`
-	Key  string `json:"key"`
 }
 
 // NamePrefix returns the prefix used as a convention when naming containers, volumes, networks, etc.
