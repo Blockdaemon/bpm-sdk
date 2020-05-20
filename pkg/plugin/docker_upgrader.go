@@ -27,7 +27,7 @@ func NewDockerUpgrader(containers []docker.Container) DockerUpgrader {
 
 // Upgrade upgrades all containers by removing and starting them again
 func (d DockerUpgrader) Upgrade(currentNode node.Node) error {
-	client, err := docker.InitializeClient(currentNode)
+	client, err := docker.NewBasicManager(currentNode)
 	if err != nil {
 		return err
 	}

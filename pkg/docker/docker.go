@@ -17,8 +17,10 @@ package docker
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
+	"html/template"
 	"io/ioutil"
 	"os"
 	"path"
@@ -32,49 +34,34 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"go.blockdaemon.com/bpm/sdk/pkg/node"
+	sdktemplate "go.blockdaemon.com/bpm/sdk/pkg/template"
 )
 
 type BasicManager struct {
-	cli       *client.Client
-	prefix    string
-	basePath  string
-	networkID string
-}
-
-// InitializeClient creates a BasicManager from a node.Node
-func InitializeClient(currentNode node.Node) (*BasicManager, error) {
-	networkID := currentNode.StrParameters["docker-network"]
-	namePrefix := currentNode.NamePrefix()
-	nodeDirectory := currentNode.NodeDirectory()
-
-	return NewBasicManager(namePrefix, nodeDirectory, networkID)
+	cli         *client.Client
+	currentNode node.Node
 }
 
 // NewBasicManager creates a BasicManager
-//
-// prefix is a string that gets added to every container-, network-, volume-name, etc. started by this client
-// basePath is a path that gets added to every relative file paths. Example with basePath = /home/user/.bpm/nodes/xyz/config: test.yml becomes /home/user/.bpm/nodes/xyz/config/test.yml
-func NewBasicManager(prefix, basePath, networkID string) (*BasicManager, error) {
+func NewBasicManager(currentNode node.Node) (*BasicManager, error) {
 	cli, err := client.NewEnvClient()
 	if err != nil {
 		return nil, err
 	}
 
 	return &BasicManager{
-		cli:       cli,
-		prefix:    prefix,
-		networkID: networkID,
-		basePath:  basePath,
+		cli:         cli,
+		currentNode: currentNode,
 	}, nil
 }
 
 func (bm *BasicManager) prefixedName(name string) string {
 	// make sure we don't accidentally double-prefix it
-	if strings.HasPrefix(name, bm.prefix) {
+	if strings.HasPrefix(name, bm.currentNode.NamePrefix()) {
 		return name
 	}
 
-	return bm.prefix + name
+	return bm.currentNode.NamePrefix() + name
 }
 
 // AddBasePath adds the base path if the supplied path is relative
@@ -84,11 +71,7 @@ func (bm *BasicManager) AddBasePath(myPath string) string {
 		return myPath
 	}
 
-	return path.Join(bm.basePath, myPath)
-}
-
-func (bm *BasicManager) SetBasePath(myPath string) {
-	bm.basePath = myPath
+	return path.Join(bm.currentNode.NodeDirectory(), myPath)
 }
 
 // ListContainerNames lists all containers by name
@@ -469,11 +452,24 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 	var mounts []mount.Mount
 	for _, mountParam := range container.Mounts {
 
-		from := ""
+		// Render the from parameter as template. This allows us to parameterize where things are stored
+		// E.g.: "{{ .Node.StrParametrs.data-dir }}/my-special-data"
+		tmpl, err := template.New("").Parse(mountParam.From)
+		if err != nil {
+			return err
+		}
+		output := bytes.NewBufferString("")
+		if err := tmpl.Execute(output, sdktemplate.TemplateData{Node: bm.currentNode}); err != nil {
+			return err
+		}
+		from := output.String()
+
+		// If it is a volume we add a prefix to be able to identify it again
+		// If it is a bind without '/' we assume it's relative to the node directory
 		if mountParam.Type == "bind" {
-			from = bm.AddBasePath(mountParam.From)
+			from = bm.AddBasePath(from)
 		} else { // volume
-			from = bm.prefixedName(mountParam.From)
+			from = bm.prefixedName(from)
 		}
 
 		mounts = append(mounts, mount.Mount{
@@ -501,8 +497,8 @@ func (bm *BasicManager) createContainer(ctx context.Context, container Container
 
 	// Network config
 	endpointsConfig := make(map[string]*network.EndpointSettings)
-	endpointsConfig[bm.networkID] = &network.EndpointSettings{
-		NetworkID: bm.networkID,
+	endpointsConfig[bm.currentNode.StrParameters["docker-network"]] = &network.EndpointSettings{
+		NetworkID: bm.currentNode.StrParameters["docker-network"],
 	}
 	networkConfig := &network.NetworkingConfig{
 		EndpointsConfig: endpointsConfig,
