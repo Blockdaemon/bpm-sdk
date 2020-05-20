@@ -3,6 +3,7 @@ module go.blockdaemon.com/bpm/sdk
 go 1.12
 
 require (
+	github.com/coreos/go-semver v0.2.0
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.13.1
 	github.com/docker/go-connections v0.4.0

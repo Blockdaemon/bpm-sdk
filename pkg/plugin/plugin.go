@@ -39,6 +39,8 @@ type Configurator interface {
 
 // LifecycleHandler provides functions to manage a node
 type LifecycleHandler interface {
+	// SetUpEnvironment prepares the runtime environment
+	SetUpEnvironment(currentNode node.Node) error
 	// Function to start a node
 	Start(currentNode node.Node) error
 	// Function to stop a running node
@@ -49,6 +51,8 @@ type LifecycleHandler interface {
 	RemoveData(currentNode node.Node) error
 	// Removes everything other than data and configuration related to the node
 	RemoveRuntime(currentNode node.Node) error
+	// TearDownEnvironment removes everything related to the node from the runtime environment
+	TearDownEnvironment(currentNode node.Node) error
 }
 
 // Upgrader is the interface that wraps the Upgrade method
@@ -113,6 +117,34 @@ func Initialize(plugin Plugin) {
 			}
 
 			return plugin.Configure(currentNode)
+		},
+	}
+
+	var setUpEnvironmentCmd = &cobra.Command{
+		Use:   "set-up-environment <node-file>",
+		Short: "Sets up the runtime environment in which the node runs",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			currentNode, err := node.Load(args[0])
+			if err != nil {
+				return err
+			}
+
+			return plugin.SetUpEnvironment(currentNode)
+		},
+	}
+
+	var tearDownEnvironmentCmd = &cobra.Command{
+		Use:   "tear-down-environment <node-file>",
+		Short: "Tears down the runtime environment in which the node runs",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			currentNode, err := node.Load(args[0])
+			if err != nil {
+				return err
+			}
+
+			return plugin.TearDownEnvironment(currentNode)
 		},
 	}
 
@@ -217,6 +249,8 @@ func Initialize(plugin Plugin) {
 	rootCmd.AddCommand(
 		validateParametersCmd,
 		createConfigurationsCmd,
+		setUpEnvironmentCmd,
+		tearDownEnvironmentCmd,
 		startCmd,
 		statusCmd,
 		stopCmd,

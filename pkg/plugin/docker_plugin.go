@@ -61,13 +61,20 @@ func NewDockerPlugin(name string, version string, description string, parameters
 			Mandatory:   false,
 			Default:     "data",
 		},
+		{
+			Name:        "monitoring-pack",
+			Type:        ParameterTypeString,
+			Description: "Enables sending monitoring data to an endpoint using settings from the monitoring pack (a *.tar.gz file)",
+			Mandatory:   false,
+			Default:     "",
+		},
 	}
 
 	meta := MetaInfo{
 		Name:            name,
 		Version:         version,
 		Description:     description,
-		ProtocolVersion: "1.1.0",
+		ProtocolVersion: "1.2.0",
 		Parameters:      append(dockerParameters, parameters...),
 		Supported:       []string{}, // We'll determine the supported functions on the fly in DockerPlugin.Meta()
 	}
