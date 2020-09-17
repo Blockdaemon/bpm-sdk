@@ -170,7 +170,7 @@ func (d DockerLifecycleHandler) Start(currentNode node.Node) error {
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancel()
 
 	monitoringPath := client.AddBasePath("monitoring")
