@@ -28,7 +28,7 @@ info:
 
     Before implementing a new package we recommend to review the example workflow below to get a feel for how a package interacts with the `bpm` cli. After that we recommend to jump right into [Implementing a package for docker deploy](#section/Go-SDK/Implementing-a-package-for-docker-deploy).
 
-    In addition the [Development Tipps](#section/Development-Tipps) can be quite useful.
+    In addition the [Development Tips](#section/Development-Tips) can be quite useful.
 
     ## Submitting a package
 
@@ -45,7 +45,7 @@ info:
 
     ## Installing a package
 
-    ![Install Diagram](https://raw.githubusercontent.com/Blockdaemon/bpm-sdk/automation/docs/install.png)
+    ![Install Diagram](https://dev-bpm-sdk-docs.storage.googleapis.com/docs/install.png)
 
     When a user runs `bpm install <package>`:
 
@@ -55,7 +55,7 @@ info:
 
     ## Configuring a node
 
-    ![Configure Diagram](https://raw.githubusercontent.com/Blockdaemon/bpm-sdk/automation/docs/configure.png)
+    ![Configure Diagram](https://dev-bpm-sdk-docs.storage.googleapis.com/docs/configure.png)
 
     When a user runs `bpm configure <package> --parameter1 --parameter2 foo`:
 
@@ -66,7 +66,7 @@ info:
 
     ## Starting a node
 
-    ![Start Diagram](https://raw.githubusercontent.com/Blockdaemon/bpm-sdk/automation/docs/start.png)
+    ![Start Diagram](https://dev-bpm-sdk-docs.storage.googleapis.com/docs/start.png)
 
     When a user runs `bpm start <node-id>`:
 
@@ -75,7 +75,7 @@ info:
       - Create all the blockchain client docker container(s) and containers with the monitoring agents (if they don't exist yet)
       - Start the docker containers (if they aren't started yet)
 
-    # Development Tipps
+    # Development Tips
 
     ## Installing a package from a binary
 
@@ -95,11 +95,11 @@ info:
     bpm packages install <package name> --debug --from-file <package file>
     ```
 
-    ## Running a package directly without `bpm`
+    ## Running a package directly without bpm
 
     Sometimes it can be useful to run individual package commands directly, without invoking the `bpm`. This allows to test those commands individually. Please note that this is not how an end user would run a package.
 
-    To run a package directly we first have to create a node configuration file (`node.json` - although for this purpose it can be an arbitrary filename). Please refer to [node.json](contract.md#nodejson-structure) for details about the file format. A useful starting point is to copy an existing `node.json` from `~/.bpm/nodes/<node-id>/node.json`.
+    To run a package directly we first have to create a node configuration file (`node.json` - although for this purpose it can be an arbitrary filename). Please refer to [node.json](#section/Package-Contract/node.json) for details about the file format. A useful starting point is to copy an existing `node.json` from `~/.bpm/nodes/<node-id>/node.json`.
 
     With the node configuration file it is possible to run a package command like this:
 
@@ -117,7 +117,7 @@ info:
 
     This can be used in a continuous integration pipeline to automatically version the binaries with e.g. the current git tag.
 
-    See https://github.com/Blockdaemon/bpm-skel/blob/master/Makefile for an example.
+    See https://gitlab.com/Blockdaemon/bpm-polkadot/-/blob/master/Makefile#L6 for an example.
 
     # Go SDK
 
@@ -155,8 +155,8 @@ info:
 
     What follows is a step by step introduction for writing a package.
 
-    A complete but simple example is available on github for [Polkadot](https://github.com/Blockdaemon/bpm-polkadot).
-    A more advanced example with multiple containers and configuration parameters is available on github for [Stellar](https://github.com/Blockdaemon/bpm-stellar).
+    A complete but simple example is available on github for [Polkadot](https://gitlab.com/Blockdaemon/bpm-polkadot/).
+    A more advanced example with multiple containers and configuration parameters is available on github for [Stellar](https://gitlab.com/Blockdaemon/bpm-stellar).
 
     ### Create an empty package
 
@@ -391,7 +391,7 @@ info:
 
     BPM does not enforce deployment targets. While the bulk of packages deploy simple docker containers, it is entirely possible to deploy to other platforms. Examples could be Kubernetes, Systemd, etc.
 
-    The [BPM SDK](go.blockdaemon.com/bpm/sdk) provides helper functions to create such a package using the Go programming language. The steps are:
+    The [BPM SDK](https://go.blockdaemon.com/bpm/sdk) provides helper functions to create such a package using the Go programming language. The steps are:
 
     1. Implement the [pugin interface](https://godoc.org/go.blockdaemon.com/bpm/sdk/pkg/plugin#Plugin)
     2. Call [initialize](https://godoc.org/go.blockdaemon.com/bpm/sdk/pkg/plugin#Initialize) with an instance of the struct implementing said interface

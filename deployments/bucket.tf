@@ -36,3 +36,9 @@ resource "google_storage_bucket_object" "image2" {
   source = "../docs/start.png"
   bucket = google_storage_bucket.bucket.name
 }
+
+resource "google_storage_bucket_object" "image3" {
+  name   = "docs/configure.png"
+  source = "../docs/configure.png"
+  bucket = google_storage_bucket.bucket.name
+}
