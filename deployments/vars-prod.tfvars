@@ -1,4 +1,4 @@
-gcp_project                = "blockdaemon-development"
+gcp_project                = "blockdaemon-production"
 gcp_bucket_name            = "prod-bpm-sdk-docs"
 k8s_context                = "gke_blockdaemon-production_us-central1-a_app-cluster-prod"
 k8s_namespace              = "bpm-sdk-docs"
