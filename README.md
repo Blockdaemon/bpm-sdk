@@ -4,4 +4,4 @@ BPM is the Blockchain Package Manager by Blockdaemon. It allows easy and uniform
 
 bpm-sdk allows to easily create new packages for BPM.
 
-Full documentation is available here: https://bpm.docs.blockdaemon.com/#bpm
+Full documentation is available here: https://sdk.bpm.docs.blockdaemon.com/
