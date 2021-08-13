@@ -1,20 +1,27 @@
 stages:
-  - check
+  - test
+  - deploy
 
 variables:
   BUCKET_NAME: blockdaemon-sdk-bpm-docs
   BUCKET_PATH: "gs://${BUCKET_NAME}"
 
-check:
+golangci_lint:
   image: golangci/golangci-lint:v1.27
-  stage: check
+  stage: test
   script:
     - golangci-lint run --enable gofmt ./...
 
 deploy_swagger_to_bucket:
   image: google/cloud-sdk:latest
-  stage: .post
+  stage: deploy
   script:
     - gcloud auth activate-service-account --key-file ${TERRAFORM_SA}
     - cat swagger.yaml | gsutil -h "Cache-Control:must-revalidate, max-age=600" cp - ${BUCKET_PATH}/bpm-sdk-swagger.yaml
   when: manual
+
+include:
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/License-Scanning.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
