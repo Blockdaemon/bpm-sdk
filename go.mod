@@ -3,6 +3,7 @@ module go.blockdaemon.com/bpm/sdk
 go 1.12
 
 require (
+	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/coreos/go-semver v0.2.0
 	github.com/docker/distribution v2.7.1+incompatible // indirect
 	github.com/docker/docker v1.13.1
@@ -12,8 +13,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/spf13/cobra v0.0.5
-	github.com/stretchr/testify v1.4.0
 	github.com/thoas/go-funk v0.5.0
-	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	gopkg.in/yaml.v2 v2.2.2
 )
